@@ -2,8 +2,7 @@
 
 
 #include "HexGrid.h"
-
-#include "HexBase.h"
+#include "Components/InstancedStaticMeshComponent.h"
 
 
 // Sets default values
@@ -12,20 +11,21 @@ AHexGrid::AHexGrid()
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = false;
+
+	//Init ISM
+	InstancedMeshComponent = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("InstancedMeshComponent"));
+	InstancedMeshComponent->SetupAttachment(GetRootComponent());
+	InstancedMeshComponent->NumCustomDataFloats = 3;
 }
 
 
 void AHexGrid::CreateHexagonMap()
 {
-	ensure(HexClass);
-	//FVector Origin = FVector::ZeroVector;
-	//FVector BoxExtent = FVector::ZeroVector;
-	UStaticMeshComponent* StatickMeshComponent = Cast<UStaticMeshComponent>(
-		HexClass.GetDefaultObject()->GetComponentByClass(UStaticMeshComponent::StaticClass()));
-	FBoxSphereBounds Bounds = StatickMeshComponent->GetStaticMesh()->GetBounds();
-	FVector BoxExtent = Bounds.BoxExtent;
-	//XOffset = - BoxExtent.X;
-	//YOffset = - BoxExtent.Z;
+	ensure(InstancedMeshComponent);
+	ensure(InstancedMeshComponent->GetStaticMesh());
+	const FBoxSphereBounds Bounds = InstancedMeshComponent->GetStaticMesh()->GetBounds();
+	const FVector BoxExtent = Bounds.BoxExtent;
+
 	for (int q = -MapRadius; q <= MapRadius; q++)
 	{
 		const int32 R1 = std::max(-MapRadius, -q - MapRadius);
@@ -39,21 +39,23 @@ void AHexGrid::CreateHexagonMap()
 			FVector Location = FVector(LocationX, LocationY, BoxExtent.Z);
 			FRotator Rotation = FRotator::ZeroRotator;
 			FTransform Transform = FTransform(Rotation, Location);
-			
-			AHexBase* hex = GetWorld()->SpawnActorDeferred<AHexBase>(HexClass, Transform);
-			
-			hex->Init(q, r, -q-r);
-			Map.Add(hex);
 
-			hex->FinishSpawning(Transform);
+			const int32 InstanceIndex = InstancedMeshComponent->AddInstance(Transform);
+			InstancedMeshComponent->SetCustomDataValue(InstanceIndex, 0, q);
+			InstancedMeshComponent->SetCustomDataValue(InstanceIndex, 1, r);
+			InstancedMeshComponent->SetCustomDataValue(InstanceIndex, 2, -q -r);
 		}
 	}
+	LogHexData();
 }
 
 void AHexGrid::LogHexData()
 {
-	for (const AHexBase* HexItem : Map)
+	for (int32 Index = 0; Index < InstancedMeshComponent->GetNumInstances(); ++Index)
 	{
-		UE_LOG(LogTemp, Display, TEXT("Actor name & Cube co-ordinates: %s %s"), *HexItem->GetName(), *HexItem->PrintCoordinates());
+		int32 P = InstancedMeshComponent->PerInstanceSMCustomData[Index * 3];
+		int32 Q = InstancedMeshComponent->PerInstanceSMCustomData[Index * 3 + 1];
+		int32 R = InstancedMeshComponent->PerInstanceSMCustomData[Index * 3 + 2];
+		UE_LOG(LogTemp, Display, TEXT("Hex Index %d Pos: P: %d Q: %d R: %d"), Index, P, Q, R);
 	}
 }

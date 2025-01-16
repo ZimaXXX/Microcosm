@@ -17,13 +17,13 @@ public:
 	AHexGrid();
 
 	int32 MapRadius = 3;
-	UPROPERTY(EditAnywhere, Category="HexGrid")
-	TSubclassOf<AHexBase> HexClass;
-	
-	TArray<AHexBase*> Map;
 
 	UFUNCTION(BlueprintCallable, Category="HexGrid")
 	void CreateHexagonMap();
 
 	void LogHexData();
+
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
+	UInstancedStaticMeshComponent* InstancedMeshComponent;
 };
