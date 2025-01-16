@@ -22,6 +22,9 @@ public:
 	void CreateHexagonMap();
 
 	void LogHexData();
+	int32 GetHexAtPosition(FIntVector InPosition) const;
+	FTransform GetTransformFromHexPosition(FIntVector InPosition) const;
+	FTransform GetTransformFromHexIndex(int32 InHexIndex) const;
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))

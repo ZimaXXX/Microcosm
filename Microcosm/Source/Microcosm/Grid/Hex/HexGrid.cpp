@@ -39,8 +39,9 @@ void AHexGrid::CreateHexagonMap()
 			FVector Location = FVector(LocationX, LocationY, BoxExtent.Z);
 			FRotator Rotation = FRotator::ZeroRotator;
 			FTransform Transform = FTransform(Rotation, Location);
-
+			
 			const int32 InstanceIndex = InstancedMeshComponent->AddInstance(Transform);
+			//Store position
 			InstancedMeshComponent->SetCustomDataValue(InstanceIndex, 0, q);
 			InstancedMeshComponent->SetCustomDataValue(InstanceIndex, 1, r);
 			InstancedMeshComponent->SetCustomDataValue(InstanceIndex, 2, -q -r);
@@ -58,4 +59,46 @@ void AHexGrid::LogHexData()
 		int32 R = InstancedMeshComponent->PerInstanceSMCustomData[Index * 3 + 2];
 		UE_LOG(LogTemp, Display, TEXT("Hex Index %d Pos: P: %d Q: %d R: %d"), Index, P, Q, R);
 	}
+}
+
+int32 AHexGrid::GetHexAtPosition(FIntVector InPosition) const
+{
+	for (int32 Index = 0; Index < InstancedMeshComponent->GetNumInstances(); ++Index)
+	{
+		int32 P = InstancedMeshComponent->PerInstanceSMCustomData[Index * 3];
+		if (InPosition.X == P)
+		{
+			int32 Q = InstancedMeshComponent->PerInstanceSMCustomData[Index * 3 + 1];
+			if (InPosition.Y == Q)
+			{
+				int32 R = InstancedMeshComponent->PerInstanceSMCustomData[Index * 3 + 2];
+				if (InPosition.Z == R)
+				{
+					return Index;
+				}
+			}
+		}
+	}
+	return INDEX_NONE;
+}
+
+FTransform AHexGrid::GetTransformFromHexPosition(FIntVector InPosition) const
+{
+	int32 Index = GetHexAtPosition(InPosition);
+	FTransform Transform = FTransform();
+	if (Index != INDEX_NONE)
+	{
+		InstancedMeshComponent->GetInstanceTransform(Index, Transform);
+	}
+	return Transform;
+}
+
+FTransform AHexGrid::GetTransformFromHexIndex(int32 InHexIndex) const
+{
+	FTransform Transform = FTransform();
+	if (InHexIndex != INDEX_NONE && InHexIndex < InstancedMeshComponent->GetNumInstances())
+	{
+		InstancedMeshComponent->GetInstanceTransform(InHexIndex, Transform);
+	}
+	return Transform;
 }

@@ -72,3 +72,10 @@ Plugins/**/Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
+/Microcosm/Binaries/Win64/UnrealEditor.modules
+/Microcosm/Binaries/Win64/UnrealEditor-Microcosm.dll
+/Microcosm/Binaries/Win64/MicrocosmEditor.target
+/Microcosm/Binaries
+/Microcosm/Binaries
+/Microcosm/Intermediate
+/Microcosm/Saved
