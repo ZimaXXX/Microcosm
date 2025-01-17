@@ -13,9 +13,6 @@
 UCLASS()
 class MICROCOSM_API AMCGameMode : public AGameModeBase, public IWorldStateInterface
 {
-
-
-private:
 	GENERATED_BODY()
 
 public:

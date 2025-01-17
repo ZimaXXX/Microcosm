@@ -4,8 +4,10 @@
 #include "MCActorManager.h"
 
 #include "MCActorBase.h"
+#include "MCCommons.h"
 #include "GameFramework/GameModeBase.h"
 #include "Hex/HexGrid.h"
+#include "Microcosm/Core/MCGameState.h"
 #include "Microcosm/Interfaces/WorldStateInterface.h"
 
 
@@ -16,16 +18,43 @@ AMCActorManager::AMCActorManager()
 	PrimaryActorTick.bCanEverTick = true;
 }
 
+// Called when the game starts or when spawned
+void AMCActorManager::BeginPlay()
+{
+	Super::BeginPlay();
+	if (HasAuthority())
+	{
+		GetWorld()->GetGameState<AMCGameState>()->OnWorldStepTickDelegate.AddDynamic(this, &AMCActorManager::OnWorldStepTick);
+		SpawnMCActors();
+	}
+}
+
+void AMCActorManager::OnWorldStepTick(int32 StepTickCount)
+{
+	HexGrid->OccupiedPositions.Empty();
+	HexGrid->OccupiedPositions.Append(ApplyMovement(MCActors));
+}
+
+TArray<FIntVector> AMCActorManager::ApplyMovement(TArray<AMCActorBase*> InMCActors)
+{
+	TArray<FIntVector> NewPositions;
+	for (AMCActorBase* MCActor : InMCActors)
+	{
+		NewPositions.Add(MCActor->ExecuteMovement());
+	}
+	return NewPositions;
+}
+
 void AMCActorManager::SpawnTeam(ETeamType InTeam)
 {
 	TArray<FMCActorAppliedConfig>* MCActorConfigs = nullptr;
 	TSubclassOf<AMCActorBase> MCActorClass = nullptr;
-	if (InTeam == Blue)
+	if (InTeam == ETeamType::Blue)
 	{
 		MCActorConfigs = &AppliedBlueActorConfigs;
 		MCActorClass = BlueMCActorClass;
 	}
-	else if (InTeam == Red)
+	else if (InTeam == ETeamType::Red)
 	{
 		MCActorConfigs = &AppliedRedActorConfigs;
 		MCActorClass = RedMCActorClass;
@@ -39,33 +68,25 @@ void AMCActorManager::SpawnTeam(ETeamType InTeam)
 	for (FMCActorAppliedConfig Config: *MCActorConfigs)
 	{
 		FTransform HexTransform = HexGrid->GetTransformFromHexPosition(Config.StartingPosition);
-
 		AMCActorBase* MCActor = GetWorld()->SpawnActorDeferred<AMCActorBase>(
 			MCActorClass,
 		HexTransform,
 		this,
 		nullptr,
 		ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+		MCActor->Init(Config, HexGrid);
 		MCActor->FinishSpawning(HexTransform);
-
+		MCActors.Add(MCActor);
 	}
-
 }
 
 void AMCActorManager::SpawnMCActors()
 {
-	ApplyMCActorTeamConfigs(Blue);
-	ApplyMCActorTeamConfigs(Red);
+	ApplyMCActorTeamConfigs(ETeamType::Blue);
+	ApplyMCActorTeamConfigs(ETeamType::Red);
 
-	SpawnTeam(Blue);
-	SpawnTeam(Red);
-}
-
-// Called when the game starts or when spawned
-void AMCActorManager::BeginPlay()
-{
-	Super::BeginPlay();
-	SpawnMCActors();
+	SpawnTeam(ETeamType::Blue);
+	SpawnTeam(ETeamType::Red);
 }
 
 bool AMCActorManager::IsPositionOccupied(const FIntVector& InPositionToCheck, TArray<FIntVector>& InOccupiedPositions)
@@ -79,11 +100,11 @@ void AMCActorManager::ApplyMCActorTeamConfigs(ETeamType InTeam)
 	ensure(GetWorld()->GetAuthGameMode()->GetClass()->ImplementsInterface(UWorldStateInterface::StaticClass()));
 	
 	const TArray<FMCActorConfig>* MCActorConfigs = nullptr;
-	if (InTeam == Blue)
+	if (InTeam == ETeamType::Blue)
 	{
 		MCActorConfigs = &BlueActorConfigs;
 	}
-	else if (InTeam == Red)
+	else if (InTeam == ETeamType::Red)
 	{
 		MCActorConfigs = &RedActorConfigs;
 	}
@@ -101,21 +122,21 @@ void AMCActorManager::ApplyMCActorTeamConfigs(ETeamType InTeam)
 
 		if (Config.bUseRandomPosition)
 		{
-			FIntVector Position = HexGrid->GetRandomEmptyHexPosition(OccupiedPositions);
+			FIntVector Position = HexGrid->GetRandomEmptyHexPosition(HexGrid->OccupiedPositions);
 			if (Position == INVALID_GRID_POSITION)
 			{
 				UE_LOG(LogTemp, Warning, TEXT("Failed to find empty random Hex!"));
 				continue;
 			}
 			AppliedConfig.StartingPosition = Position;//it's already validated
-			OccupiedPositions.Add(AppliedConfig.StartingPosition);
+			HexGrid->OccupiedPositions.Add(AppliedConfig.StartingPosition);
 		}
-		else if (!IsPositionOccupied(Config.StartingPosition, OccupiedPositions))
+		else if (!IsPositionOccupied(Config.StartingPosition, HexGrid->OccupiedPositions))
 		{
 			if (HexGrid->IsHexAtPosition(Config.StartingPosition))
 			{
 				AppliedConfig.StartingPosition = Config.StartingPosition;
-				OccupiedPositions.Add(AppliedConfig.StartingPosition);
+				HexGrid->OccupiedPositions.Add(AppliedConfig.StartingPosition);
 			}
 			else
 			{
@@ -145,9 +166,9 @@ void AMCActorManager::ApplyMCActorTeamConfigs(ETeamType InTeam)
 		AppliedConfig.TeamId = InTeam;
 		switch (InTeam)
 		{
-			case Blue:
+			case ETeamType::Blue:
 				AppliedBlueActorConfigs.Add(AppliedConfig);
-			case Red:
+			case ETeamType::Red:
 				AppliedRedActorConfigs.Add(AppliedConfig);
 			default:;
 		}

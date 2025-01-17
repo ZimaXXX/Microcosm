@@ -4,7 +4,7 @@
 #include "HexGrid.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "GameFramework/GameModeBase.h"
-#include "Microcosm/Grid/MCActorBase.h"
+#include "Microcosm/Grid/MCCommons.h"
 #include "Microcosm/Interfaces/WorldStateInterface.h"
 
 
@@ -111,7 +111,7 @@ FTransform AHexGrid::GetTransformFromHexIndex(int32 InHexIndex) const
 	return Transform;
 }
 
-const TArray<FIntVector>* AHexGrid::GetEmptyHexPositions(TArray<FIntVector> ExcludedPositions) const
+const TArray<FIntVector>* AHexGrid::GetEmptyHexPositions(TArray<FIntVector> ExcludedPositions, int32 Range, FIntVector InTestedPosition) const
 {
 	TArray<FIntVector>* ValidPositions = new TArray<FIntVector>();
 	for (int32 Index = 0; Index < InstancedMeshComponent->GetNumInstances(); ++Index)
@@ -120,6 +120,10 @@ const TArray<FIntVector>* AHexGrid::GetEmptyHexPositions(TArray<FIntVector> Excl
 		ISMPos.X = InstancedMeshComponent->PerInstanceSMCustomData[Index * 3];
 		ISMPos.Y = InstancedMeshComponent->PerInstanceSMCustomData[Index * 3 + 1];
 		ISMPos.Z = InstancedMeshComponent->PerInstanceSMCustomData[Index * 3 + 2];
+		if (InTestedPosition == ISMPos)
+		{
+			continue;
+		}
 		bool IsExcluded = false;
 		for (FIntVector ExcludedPosition : ExcludedPositions)
 		{
@@ -132,20 +136,71 @@ const TArray<FIntVector>* AHexGrid::GetEmptyHexPositions(TArray<FIntVector> Excl
 		}
 		if (!IsExcluded)
 		{
-			ValidPositions->Add(ISMPos);
+			//Range checking
+			if (Range > 0 && InTestedPosition != INVALID_GRID_POSITION)
+			{
+				if (IsHexInRange(InTestedPosition, ISMPos, Range))
+				{
+					ValidPositions->Add(ISMPos);
+				}
+			}
+			else
+			{
+				ValidPositions->Add(ISMPos);
+			}
 		}		
 	}
 	return ValidPositions;
 }
 
-FIntVector AHexGrid::GetRandomEmptyHexPosition(TArray<FIntVector> ExcludedPositions) const
+// FIntVector AHexGrid::FindRandomEmptyHexInRange(FIntVector InTestedPosition, int32 InRange) const
+// {
+// 	TArray<FIntVector> HexesInRange = *GetEmptyHexPositions(OccupiedPositions, InRange, InTestedPosition);
+// 	if (HexesInRange.Num() == 0)
+// 	{
+// 		return INVALID_GRID_POSITION;
+// 	}
+// 	if (HexesInRange.Num() == 1)
+// 	{
+// 		return HexesInRange[0];
+// 	}
+// 	if (IWorldStateInterface* WorldStateInterface = Cast<IWorldStateInterface>(GetWorld()->GetAuthGameMode()))
+// 	{
+// 		FRandomStream WorldRandomStream = WorldStateInterface->GetWorldRandomStream();
+// 		int32 Index = WorldRandomStream.RandRange(0, HexesInRange.Num() - 1);
+// 		UE_LOG(LogTemp, Warning, TEXT("1Random index: %d"), Index);
+// 		return HexesInRange[Index];
+// 	}
+// 	return INVALID_GRID_POSITION;
+// 	
+// }
+bool AHexGrid::IsHexInRange(FIntVector InTestedPosition, FIntVector InHexPosition, int32 Range) const
 {
-	const TArray<FIntVector>* ValidPositions = GetEmptyHexPositions(ExcludedPositions);
+	int32 Distance = FMath::Max(
+		   FMath::Max(FMath::Abs(InTestedPosition.X - InHexPosition.X), FMath::Abs(InTestedPosition.Y - InHexPosition.Y)),
+		   FMath::Abs(InTestedPosition.Z - InHexPosition.Z)
+	   );
+	
+	return Distance <= Range;
+}
+
+FIntVector AHexGrid::GetRandomEmptyHexPosition(TArray<FIntVector> ExcludedPositions, FIntVector InTestedPosition, int32 InRange) const
+{
+	const TArray<FIntVector>* ValidPositions = GetEmptyHexPositions(ExcludedPositions, InRange, InTestedPosition);
+	if (ValidPositions->Num() == 0)
+	{
+		return INVALID_GRID_POSITION;
+	}
+	if (ValidPositions->Num() == 1)
+	{
+		return (*ValidPositions)[0];
+	}
 	FIntVector FinalPosition = INVALID_GRID_POSITION;
 	if (IWorldStateInterface* WorldStateInterface = Cast<IWorldStateInterface>(GetWorld()->GetAuthGameMode()); ValidPositions && !ValidPositions->Num() == 0)
 	{
 		FRandomStream WorldRandomStream = WorldStateInterface->GetWorldRandomStream();
 		int32 Index = WorldRandomStream.RandRange(0, ValidPositions->Num() - 1);
+		UE_LOG(LogTemp, Warning, TEXT("Random index: %d"), Index);
 		FinalPosition = (*ValidPositions)[Index];
 	}
 	return FinalPosition;

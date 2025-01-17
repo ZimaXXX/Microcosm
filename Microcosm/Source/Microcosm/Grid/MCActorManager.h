@@ -9,43 +9,6 @@
 
 class AHexGrid;
 
-UENUM(BlueprintType)
-enum ETeamType : uint8
-{
-	None = 0,
-	Blue = 1,
-	Red = 2
-};
-
-USTRUCT(BlueprintType)
-struct FMCActorConfig
-{
-	GENERATED_BODY();
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	bool bUseRandomPosition = true;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "!bUseRandomPosition"))
-	FIntVector StartingPosition = INVALID_GRID_POSITION;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	bool bUseRandomHealth = true;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "!bUseRandomHealth"))
-	int32 MaxHealth = 1;
-};
-
-USTRUCT(BlueprintType)
-struct FMCActorAppliedConfig
-{
-	GENERATED_BODY();
-	UPROPERTY(BlueprintReadOnly)
-	TEnumAsByte<ETeamType> TeamId = None;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "!bUseRandomPosition"))
-	FIntVector StartingPosition = INVALID_GRID_POSITION;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "!bUseRandomHealth"))
-	int32 MaxHealth = 1;
-};
-
 
 
 UCLASS(Blueprintable, BlueprintType)
@@ -60,8 +23,12 @@ public:
 protected:
 	void SpawnTeam(ETeamType InTeam);
 	void SpawnMCActors();
+	TArray<FIntVector> ApplyMovement(TArray<AMCActorBase*> InMCActors);
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+
+	UFUNCTION()
+	void OnWorldStepTick(int32 StepTickCount);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Config")
 	AHexGrid* HexGrid = nullptr;
@@ -85,6 +52,6 @@ protected:
 
 	bool IsPositionOccupied(const FIntVector& InPositionToCheck, TArray<FIntVector>& InOccupiedPositions);
 	void ApplyMCActorTeamConfigs(ETeamType InTeam);
-
-	TArray<FIntVector> OccupiedPositions;
+	
+	TArray<AMCActorBase*> MCActors;
 };
