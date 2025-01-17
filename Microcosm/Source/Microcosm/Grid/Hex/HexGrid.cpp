@@ -3,6 +3,9 @@
 
 #include "HexGrid.h"
 #include "Components/InstancedStaticMeshComponent.h"
+#include "GameFramework/GameModeBase.h"
+#include "Microcosm/Grid/MCActorBase.h"
+#include "Microcosm/Interfaces/WorldStateInterface.h"
 
 
 // Sets default values
@@ -47,7 +50,7 @@ void AHexGrid::CreateHexagonMap()
 			InstancedMeshComponent->SetCustomDataValue(InstanceIndex, 2, -q -r);
 		}
 	}
-	LogHexData();
+	//LogHexData();
 }
 
 void AHexGrid::LogHexData()
@@ -59,6 +62,11 @@ void AHexGrid::LogHexData()
 		int32 R = InstancedMeshComponent->PerInstanceSMCustomData[Index * 3 + 2];
 		UE_LOG(LogTemp, Display, TEXT("Hex Index %d Pos: P: %d Q: %d R: %d"), Index, P, Q, R);
 	}
+}
+
+bool AHexGrid::IsHexAtPosition(FIntVector InPosition) const
+{
+	return GetHexAtPosition(InPosition) != INDEX_NONE;
 }
 
 int32 AHexGrid::GetHexAtPosition(FIntVector InPosition) const
@@ -101,4 +109,44 @@ FTransform AHexGrid::GetTransformFromHexIndex(int32 InHexIndex) const
 		InstancedMeshComponent->GetInstanceTransform(InHexIndex, Transform);
 	}
 	return Transform;
+}
+
+const TArray<FIntVector>* AHexGrid::GetEmptyHexPositions(TArray<FIntVector> ExcludedPositions) const
+{
+	TArray<FIntVector>* ValidPositions = new TArray<FIntVector>();
+	for (int32 Index = 0; Index < InstancedMeshComponent->GetNumInstances(); ++Index)
+	{
+		FIntVector ISMPos = FIntVector::ZeroValue;
+		ISMPos.X = InstancedMeshComponent->PerInstanceSMCustomData[Index * 3];
+		ISMPos.Y = InstancedMeshComponent->PerInstanceSMCustomData[Index * 3 + 1];
+		ISMPos.Z = InstancedMeshComponent->PerInstanceSMCustomData[Index * 3 + 2];
+		bool IsExcluded = false;
+		for (FIntVector ExcludedPosition : ExcludedPositions)
+		{
+			if (ISMPos == ExcludedPosition)
+			{
+				IsExcluded = true;
+				ExcludedPositions.Remove(ExcludedPosition);
+				break;
+			}
+		}
+		if (!IsExcluded)
+		{
+			ValidPositions->Add(ISMPos);
+		}		
+	}
+	return ValidPositions;
+}
+
+FIntVector AHexGrid::GetRandomEmptyHexPosition(TArray<FIntVector> ExcludedPositions) const
+{
+	const TArray<FIntVector>* ValidPositions = GetEmptyHexPositions(ExcludedPositions);
+	FIntVector FinalPosition = INVALID_GRID_POSITION;
+	if (IWorldStateInterface* WorldStateInterface = Cast<IWorldStateInterface>(GetWorld()->GetAuthGameMode()); ValidPositions && !ValidPositions->Num() == 0)
+	{
+		FRandomStream WorldRandomStream = WorldStateInterface->GetWorldRandomStream();
+		int32 Index = WorldRandomStream.RandRange(0, ValidPositions->Num() - 1);
+		FinalPosition = (*ValidPositions)[Index];
+	}
+	return FinalPosition;
 }

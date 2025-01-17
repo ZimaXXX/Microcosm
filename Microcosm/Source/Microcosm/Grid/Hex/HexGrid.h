@@ -22,10 +22,13 @@ public:
 	void CreateHexagonMap();
 
 	void LogHexData();
+	bool IsHexAtPosition(FIntVector InPosition) const;
 	int32 GetHexAtPosition(FIntVector InPosition) const;
 	FTransform GetTransformFromHexPosition(FIntVector InPosition) const;
 	FTransform GetTransformFromHexIndex(int32 InHexIndex) const;
+	FIntVector GetRandomEmptyHexPosition(TArray<FIntVector> ExcludedPositions) const;
 
+	const TArray<FIntVector>* GetEmptyHexPositions(TArray<FIntVector> ExcludedPositions) const;
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
 	UInstancedStaticMeshComponent* InstancedMeshComponent;

@@ -21,11 +21,28 @@ USTRUCT(BlueprintType)
 struct FMCActorConfig
 {
 	GENERATED_BODY();
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bUseRandomPosition = true;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "!bUseRandomPosition"))
 	FIntVector StartingPosition = INVALID_GRID_POSITION;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bUseRandomHealth = true;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "!bUseRandomHealth"))
+	int32 MaxHealth = 1;
+};
+
+USTRUCT(BlueprintType)
+struct FMCActorAppliedConfig
+{
+	GENERATED_BODY();
 	UPROPERTY(BlueprintReadOnly)
 	TEnumAsByte<ETeamType> TeamId = None;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "!bUseRandomPosition"))
+	FIntVector StartingPosition = INVALID_GRID_POSITION;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "!bUseRandomHealth"))
 	int32 MaxHealth = 1;
 };
 
@@ -51,11 +68,11 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Config")
 	TArray<FMCActorConfig> BlueActorConfigs;
-	TArray<FMCActorConfig> AppliedBlueActorConfigs;
+	TArray<FMCActorAppliedConfig> AppliedBlueActorConfigs;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Config")
 	TArray<FMCActorConfig> RedActorConfigs;
-	TArray<FMCActorConfig> AppliedRedActorConfigs;
+	TArray<FMCActorAppliedConfig> AppliedRedActorConfigs;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Config")
 	TSubclassOf<AMCActorBase> BlueMCActorClass;
@@ -63,6 +80,11 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Config")
 	TSubclassOf<AMCActorBase> RedMCActorClass;
 	
-	bool IsPositionOccupied(const FIntVector& PositionToCheck, TArray<FIntVector>& OccupiedPositions);
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Config")
+	int32 MaxHealth = 5;
+
+	bool IsPositionOccupied(const FIntVector& InPositionToCheck, TArray<FIntVector>& InOccupiedPositions);
 	void ApplyMCActorTeamConfigs(ETeamType InTeam);
+
+	TArray<FIntVector> OccupiedPositions;
 };

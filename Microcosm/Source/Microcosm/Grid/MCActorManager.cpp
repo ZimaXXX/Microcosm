@@ -4,7 +4,9 @@
 #include "MCActorManager.h"
 
 #include "MCActorBase.h"
+#include "GameFramework/GameModeBase.h"
 #include "Hex/HexGrid.h"
+#include "Microcosm/Interfaces/WorldStateInterface.h"
 
 
 // Sets default values
@@ -16,16 +18,16 @@ AMCActorManager::AMCActorManager()
 
 void AMCActorManager::SpawnTeam(ETeamType InTeam)
 {
-	TArray<FMCActorConfig>* MCActorConfigs = nullptr;
+	TArray<FMCActorAppliedConfig>* MCActorConfigs = nullptr;
 	TSubclassOf<AMCActorBase> MCActorClass = nullptr;
 	if (InTeam == Blue)
 	{
-		MCActorConfigs = &BlueActorConfigs;
+		MCActorConfigs = &AppliedBlueActorConfigs;
 		MCActorClass = BlueMCActorClass;
 	}
 	else if (InTeam == Red)
 	{
-		MCActorConfigs = &RedActorConfigs;
+		MCActorConfigs = &AppliedRedActorConfigs;
 		MCActorClass = RedMCActorClass;
 	}
 	else
@@ -34,7 +36,7 @@ void AMCActorManager::SpawnTeam(ETeamType InTeam)
 	}
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	for (FMCActorConfig Config: *MCActorConfigs)
+	for (FMCActorAppliedConfig Config: *MCActorConfigs)
 	{
 		FTransform HexTransform = HexGrid->GetTransformFromHexPosition(Config.StartingPosition);
 
@@ -45,8 +47,7 @@ void AMCActorManager::SpawnTeam(ETeamType InTeam)
 		nullptr,
 		ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 		MCActor->FinishSpawning(HexTransform);
-		// hex->InitializeHex(q, r, -q-r);
-		// Map.Add(hex);
+
 	}
 
 }
@@ -67,15 +68,17 @@ void AMCActorManager::BeginPlay()
 	SpawnMCActors();
 }
 
-bool AMCActorManager::IsPositionOccupied(const FIntVector& PositionToCheck, TArray<FIntVector>& OccupiedPositions)
+bool AMCActorManager::IsPositionOccupied(const FIntVector& InPositionToCheck, TArray<FIntVector>& InOccupiedPositions)
 {
-	return OccupiedPositions.Contains(PositionToCheck);
+	return InOccupiedPositions.Contains(InPositionToCheck);
 }
 
 void AMCActorManager::ApplyMCActorTeamConfigs(ETeamType InTeam)
 {
-	TArray<FIntVector> OccupiedPositions;
-	TArray<FMCActorConfig>* MCActorConfigs = nullptr;
+	//We need GameMode to implement WorldStateInterface
+	ensure(GetWorld()->GetAuthGameMode()->GetClass()->ImplementsInterface(UWorldStateInterface::StaticClass()));
+	
+	const TArray<FMCActorConfig>* MCActorConfigs = nullptr;
 	if (InTeam == Blue)
 	{
 		MCActorConfigs = &BlueActorConfigs;
@@ -87,24 +90,67 @@ void AMCActorManager::ApplyMCActorTeamConfigs(ETeamType InTeam)
 
 	for (FMCActorConfig Config: *MCActorConfigs)
 	{
-		if (Config.StartingPosition == INVALID_GRID_POSITION)
+		FMCActorAppliedConfig* pAppliedConfig = new FMCActorAppliedConfig();
+		FMCActorAppliedConfig AppliedConfig;
+		if (!Config.bUseRandomPosition && Config.StartingPosition == INVALID_GRID_POSITION)
 		{
+			UE_LOG(LogTemp, Error, TEXT("Provided StartingPosition is INVALID!"));
+			//Invalid data
 			continue;
 		}
-		if (Config.TeamId != InTeam)
-		{
-			Config.TeamId = InTeam;
-		}
-		if (!IsPositionOccupied(Config.StartingPosition, OccupiedPositions))
-		{
-			if (HexGrid->GetHexAtPosition(Config.StartingPosition))
-			{
-				OccupiedPositions.Add(Config.StartingPosition);
-			}
 
+		if (Config.bUseRandomPosition)
+		{
+			FIntVector Position = HexGrid->GetRandomEmptyHexPosition(OccupiedPositions);
+			if (Position == INVALID_GRID_POSITION)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Failed to find empty random Hex!"));
+				continue;
+			}
+			AppliedConfig.StartingPosition = Position;//it's already validated
+			OccupiedPositions.Add(AppliedConfig.StartingPosition);
+		}
+		else if (!IsPositionOccupied(Config.StartingPosition, OccupiedPositions))
+		{
+			if (HexGrid->IsHexAtPosition(Config.StartingPosition))
+			{
+				AppliedConfig.StartingPosition = Config.StartingPosition;
+				OccupiedPositions.Add(AppliedConfig.StartingPosition);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Invalid Hex Position!"));
+				continue;
+			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Position is occupied!"));
+			continue;
 		}
 		
-		AppliedBlueActorConfigs.Add(Config);
+		if(Config.bUseRandomHealth)
+		{
+			if (IWorldStateInterface* WorldStateInterface = Cast<IWorldStateInterface>(GetWorld()->GetAuthGameMode()))
+			{
+				FRandomStream WorldRandomStream = WorldStateInterface->GetWorldRandomStream();
+				AppliedConfig.MaxHealth = WorldRandomStream.RandRange(1, MaxHealth);
+			}
+		}
+		else
+		{
+			AppliedConfig.MaxHealth = FMath::Clamp(Config.MaxHealth, 1, MaxHealth);
+		}
+
+		AppliedConfig.TeamId = InTeam;
+		switch (InTeam)
+		{
+			case Blue:
+				AppliedBlueActorConfigs.Add(AppliedConfig);
+			case Red:
+				AppliedRedActorConfigs.Add(AppliedConfig);
+			default:;
+		}
 	}
 }
 
