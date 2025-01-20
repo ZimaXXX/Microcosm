@@ -32,8 +32,8 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Config)
 	int32 WorldRandomSeed = 0;
-	
-	FRandomStream WorldRandomStream {};
+
+	FRandomStream WorldRandomStream;
 
 	//IWorldStateInterface
 public:

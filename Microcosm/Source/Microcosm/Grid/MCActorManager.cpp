@@ -154,7 +154,7 @@ void AMCActorManager::ApplyMCActorTeamConfigs(ETeamType InTeam)
 		{
 			if (IWorldStateInterface* WorldStateInterface = Cast<IWorldStateInterface>(GetWorld()->GetAuthGameMode()))
 			{
-				FRandomStream WorldRandomStream = WorldStateInterface->GetWorldRandomStream();
+				FRandomStream& WorldRandomStream = WorldStateInterface->GetWorldRandomStream();
 				AppliedConfig.MaxHealth = WorldRandomStream.RandRange(1, MaxHealth);
 			}
 		}

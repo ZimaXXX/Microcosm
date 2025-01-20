@@ -4,6 +4,7 @@
 #include "HexGrid.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "GameFramework/GameModeBase.h"
+#include "Microcosm/Core/MCGameMode.h"
 #include "Microcosm/Grid/MCCommons.h"
 #include "Microcosm/Interfaces/WorldStateInterface.h"
 
@@ -198,9 +199,8 @@ FIntVector AHexGrid::GetRandomEmptyHexPosition(TArray<FIntVector> ExcludedPositi
 	FIntVector FinalPosition = INVALID_GRID_POSITION;
 	if (IWorldStateInterface* WorldStateInterface = Cast<IWorldStateInterface>(GetWorld()->GetAuthGameMode()); ValidPositions && !ValidPositions->Num() == 0)
 	{
-		FRandomStream WorldRandomStream = WorldStateInterface->GetWorldRandomStream();
+		FRandomStream& WorldRandomStream = WorldStateInterface->GetWorldRandomStream();
 		int32 Index = WorldRandomStream.RandRange(0, ValidPositions->Num() - 1);
-		UE_LOG(LogTemp, Warning, TEXT("Random index: %d"), Index);
 		FinalPosition = (*ValidPositions)[Index];
 	}
 	return FinalPosition;
