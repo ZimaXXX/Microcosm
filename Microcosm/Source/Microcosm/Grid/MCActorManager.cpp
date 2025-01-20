@@ -56,7 +56,7 @@ TArray<FIntVector> AMCActorManager::ApplyMovement()
 	{
 		FIntVector PrevPosition;
 		FIntVector NewPosition;
-		MCActor->ExecuteMovement(NewPosition, PrevPosition);
+		MCActor->ExecuteMovement(NewPosition, PrevPosition, this);
 		if (NewPosition != PrevPosition)
 		{
 			NewPositions.Remove(PrevPosition);
@@ -262,6 +262,28 @@ const TArray<AMCActorBase*> AMCActorManager::GetEnemyMCActorsInRange(FIntVector 
 		}
 	}
 	return EnemyMCActors;
+}
+
+const AMCActorBase* AMCActorManager::GetClosestEnemyMCActor(FIntVector TestedPosition, ETeamType TeamId, int32& OutDistance) 
+{
+	int32 SmallestDistance = INT32_MAX;
+
+	AMCActorBase* ClosestEnemy = nullptr;
+	TArray<AMCActorBase*> Enemies = GetEnemyMCActorsInRange(TestedPosition, TeamId, HexGrid->GetMaxRange());
+	if (Enemies.Num() > 0)
+	{		
+		for (AMCActorBase* Enemy : Enemies)
+		{
+			int32 CurrentDistance = HexGrid->GetHexDistance(TestedPosition, Enemy->GetPositionOnGrid());
+			if (CurrentDistance < SmallestDistance)
+			{
+				SmallestDistance = CurrentDistance;
+				ClosestEnemy = Enemy;
+			}			
+		}
+	}
+	OutDistance = SmallestDistance;
+	return ClosestEnemy;
 }
 
 

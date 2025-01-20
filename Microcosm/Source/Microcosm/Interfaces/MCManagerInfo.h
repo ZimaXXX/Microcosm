@@ -25,4 +25,5 @@ class MICROCOSM_API IMCManagerInfo
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
 	virtual const TArray<AMCActorBase*> GetEnemyMCActorsInRange(FIntVector TestedPosition, ETeamType TeamId, int32 Range) = 0;
+	virtual const AMCActorBase* GetClosestEnemyMCActor(FIntVector TestedPosition, ETeamType TeamId, int32& OutDistance) = 0;
 };

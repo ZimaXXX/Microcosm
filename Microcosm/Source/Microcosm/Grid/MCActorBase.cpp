@@ -2,7 +2,6 @@
 
 
 #include "MCActorBase.h"
-#include "MCCommons.h"
 #include "Hex/HexGrid.h"
 #include "Microcosm/Core/MCGameState.h"
 #include "Microcosm/Interfaces/MCManagerInfo.h"
@@ -64,7 +63,7 @@ FIntVector AMCActorBase::MoveTo(FIntVector InTargetPosition)
 	return PositionOnGrid;
 }
 
-void AMCActorBase::ExecuteMovement(FIntVector& OutNewPosition, FIntVector& OutPrevPosition)
+void AMCActorBase::ExecuteMovement(FIntVector& OutNewPosition, FIntVector& OutPrevPosition, IMCManagerInfo* ManagerInfo)
 {
 	FIntVector PrevPositionOnGrid = PositionOnGrid;
 	OutPrevPosition = PrevPositionOnGrid;
@@ -86,6 +85,20 @@ void AMCActorBase::ExecuteMovement(FIntVector& OutNewPosition, FIntVector& OutPr
 	{
 		FIntVector TargetPosition = HexGrid->GetRandomEmptyHexPosition(HexGrid->OccupiedPositions, PositionOnGrid, 1);
 		MoveTo(TargetPosition);
+	}
+	else if (MovementPattern == EMovementPattern::AStar)
+	{
+		int32 Distance;
+		const AMCActorBase* ClosestEnemy = ManagerInfo->GetClosestEnemyMCActor(PositionOnGrid, TeamId, Distance);
+		if (IsValid(ClosestEnemy) && Distance > 1 && Distance > AttackRange)
+		{
+			TArray<FIntVector> Path = HexGrid->FindPathWithAStar(PositionOnGrid, ClosestEnemy->PositionOnGrid);
+			if (Path.Num() > 1)
+			{
+				FIntVector TargetPosition = Path[1];
+				MoveTo(TargetPosition);
+			}
+		}
 	}
 }
 

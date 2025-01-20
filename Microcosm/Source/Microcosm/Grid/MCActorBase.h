@@ -21,7 +21,8 @@ UENUM(BlueprintType)
 enum class EMovementPattern : uint8
 {
 	None = 0,
-	Random = 1
+	Random = 1,
+	AStar = 2
 };
 
 USTRUCT(BlueprintType)
@@ -79,7 +80,7 @@ public:
 	void OrderMovementAnimation();
 	virtual void Tick(float DeltaSeconds) override;
 	FIntVector MoveTo(FIntVector InTargetPosition);
-	void ExecuteMovement(FIntVector& OutNewPosition, FIntVector& OutPrevPosition);
+	void ExecuteMovement(FIntVector& OutNewPosition, FIntVector& OutPrevPosition, IMCManagerInfo* ManagerInfo);
 	void OnNewTurn();
 	void OnDeath();
 	void ApplyDamage(int32 Damage);
@@ -128,7 +129,7 @@ protected:
 	//Config
 	ETeamType TeamId = ETeamType::None;
 	int32 MaxHealth = 0;
-	EMovementPattern MovementPattern = EMovementPattern::Random;
+	EMovementPattern MovementPattern = EMovementPattern::AStar;
 
 	//TODO Add to Init
 	bool bCanMoveAfterAttack = false;

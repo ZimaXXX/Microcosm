@@ -37,6 +37,14 @@ void AHexGrid::CreateHexagonMap()
 		
 		for (int r = R1; r <= R2; r++)
 		{
+			if (HolesInMap.Num() > 0)
+			{
+				FIntVector PotentialHole = FIntVector(q, r, -q -r);
+				if (HolesInMap.Contains(PotentialHole))
+				{
+					continue;
+				}
+			}
 			const float LocationX = q * BoxExtent.X + static_cast<float>(r * 2 * BoxExtent.X);
 			const float LocationY = static_cast<float>(q * 2 * BoxExtent.Y) - BoxExtent.Z * q;
 			
@@ -154,36 +162,52 @@ const TArray<FIntVector>* AHexGrid::GetEmptyHexPositions(TArray<FIntVector> Excl
 	return ValidPositions;
 }
 
-// FIntVector AHexGrid::FindRandomEmptyHexInRange(FIntVector InTestedPosition, int32 InRange) const
-// {
-// 	TArray<FIntVector> HexesInRange = *GetEmptyHexPositions(OccupiedPositions, InRange, InTestedPosition);
-// 	if (HexesInRange.Num() == 0)
-// 	{
-// 		return INVALID_GRID_POSITION;
-// 	}
-// 	if (HexesInRange.Num() == 1)
-// 	{
-// 		return HexesInRange[0];
-// 	}
-// 	if (IWorldStateInterface* WorldStateInterface = Cast<IWorldStateInterface>(GetWorld()->GetAuthGameMode()))
-// 	{
-// 		FRandomStream WorldRandomStream = WorldStateInterface->GetWorldRandomStream();
-// 		int32 Index = WorldRandomStream.RandRange(0, HexesInRange.Num() - 1);
-// 		UE_LOG(LogTemp, Warning, TEXT("1Random index: %d"), Index);
-// 		return HexesInRange[Index];
-// 	}
-// 	return INVALID_GRID_POSITION;
-// 	
-// }
-bool AHexGrid::IsHexInRange(FIntVector InTestedPosition, FIntVector InHexPosition, int32 Range) const
+int32 AHexGrid::GetHexDistance(FIntVector InTestedPosition, FIntVector InHexPosition) const
 {
 	int32 Distance = FMath::Max(
-		   FMath::Max(FMath::Abs(InTestedPosition.X - InHexPosition.X), FMath::Abs(InTestedPosition.Y - InHexPosition.Y)),
-		   FMath::Abs(InTestedPosition.Z - InHexPosition.Z)
-	   );
+		FMath::Max(FMath::Abs(InTestedPosition.X - InHexPosition.X), FMath::Abs(InTestedPosition.Y - InHexPosition.Y)),
+		FMath::Abs(InTestedPosition.Z - InHexPosition.Z)
+	);
+	return Distance;
+}
+
+bool AHexGrid::IsHexInRange(FIntVector InTestedPosition, FIntVector InHexPosition, int32 Range) const
+{
+	int32 Distance = GetHexDistance(InTestedPosition, InHexPosition);
 	
 	return Distance <= Range;
 }
+
+bool AHexGrid::IsHexPassable(FIntVector InTestedPosition)
+{
+	return IsHexAtPosition(InTestedPosition) && !OccupiedPositions.Contains(InTestedPosition);
+}
+
+TArray<FIntVector> AHexGrid::GetPassableHexNeighbors(FIntVector InTestedPosition)
+{
+	TArray<FIntVector> Neighbors;
+	for (const FIntVector& Direction : HexDirections)
+	{
+		FIntVector TestedNeighbor = InTestedPosition + Direction;
+		if (IsHexPassable(TestedNeighbor))
+		{
+			Neighbors.Add(TestedNeighbor);
+		}			
+	}
+	return Neighbors;
+}
+
+TArray<FIntVector> AHexGrid::GetHexNeighbors(FIntVector InTestedPosition)
+{
+		TArray<FIntVector> Neighbors;
+    	for (const FIntVector& Direction : HexDirections)
+    	{
+    		FIntVector TestedNeighbor = InTestedPosition + Direction;
+    		Neighbors.Add(TestedNeighbor);		
+    	}
+    	return Neighbors;
+}
+
 
 FIntVector AHexGrid::GetRandomEmptyHexPosition(TArray<FIntVector> ExcludedPositions, FIntVector InTestedPosition, int32 InRange) const
 {
@@ -204,4 +228,70 @@ FIntVector AHexGrid::GetRandomEmptyHexPosition(TArray<FIntVector> ExcludedPositi
 		FinalPosition = (*ValidPositions)[Index];
 	}
 	return FinalPosition;
+}
+
+TArray<FIntVector> AHexGrid::FindPathWithAStar(FIntVector Start, FIntVector Goal)
+{
+	// Priority queue for open set
+	TArray<FIntVector> OpenSet = { Start };
+
+	// Maps to track scores
+	TMap<FIntVector, int32> GScore;
+	TMap<FIntVector, int32> FScore;
+	TMap<FIntVector, FIntVector> CameFrom;
+
+	// Initialize scores
+	GScore.Add(Start, 0);
+	FScore.Add(Start, GetHexDistance(Start, Goal));
+
+	while (OpenSet.Num() > 0)
+	{
+		// Find node with lowest F-Score
+		OpenSet.Sort([&](const FIntVector& A, const FIntVector& B) {
+			return FScore[A] < FScore[B];
+		});
+		FIntVector Current = OpenSet[0];
+
+		// Check if reached goal
+		if (Current == Goal)
+		{
+			// Reconstruct path
+			TArray<FIntVector> Path;
+			while (CameFrom.Contains(Current))
+			{
+				Path.Add(Current);
+				Current = CameFrom[Current];
+			}
+			Path.Add(Start);
+			Algo::Reverse(Path);
+			return Path;
+		}
+
+		OpenSet.RemoveAt(0);
+		TArray<FIntVector> HexNeighbors = GetHexNeighbors(Current);
+		for (const FIntVector& Neighbor : HexNeighbors)
+		{
+			if (Neighbor != Goal && !IsHexPassable(Neighbor))
+			{
+				continue;
+			}
+			int32 TentativeGScore = GScore[Current] + 1;
+
+			if (!GScore.Contains(Neighbor) || TentativeGScore < GScore[Neighbor])
+			{
+				// Update scores and path
+				CameFrom.Add(Neighbor, Current);
+				GScore.Add(Neighbor, TentativeGScore);
+				FScore.Add(Neighbor, TentativeGScore + GetHexDistance(Neighbor, Goal));
+
+				if (!OpenSet.Contains(Neighbor))
+				{
+					OpenSet.Add(Neighbor);
+				}
+			}
+		}
+	}
+
+	// Return empty path if no solution
+	return {};
 }

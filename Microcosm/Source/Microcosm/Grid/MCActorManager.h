@@ -13,6 +13,7 @@ class AHexGrid;
 UCLASS(Blueprintable, BlueprintType)
 class MICROCOSM_API AMCActorManager : public AActor, public IMCManagerInfo
 {
+
 	GENERATED_BODY()
 
 public:
@@ -65,4 +66,5 @@ protected:
 	//MCManagerInfo Interface
 public:
 	virtual const TArray<AMCActorBase*> GetEnemyMCActorsInRange(FIntVector TestedPosition, ETeamType TeamId, int32 Range) override;
+	virtual const AMCActorBase* GetClosestEnemyMCActor(FIntVector TestedPosition, ETeamType TeamId, int32& OutDistance) override;
 };
