@@ -5,14 +5,13 @@
 #include "CoreMinimal.h"
 #include "MCActorBase.h"
 #include "GameFramework/Actor.h"
+#include "Microcosm/Interfaces/MCManagerInfo.h"
 #include "MCActorManager.generated.h"
 
 class AHexGrid;
 
-
-
 UCLASS(Blueprintable, BlueprintType)
-class MICROCOSM_API AMCActorManager : public AActor
+class MICROCOSM_API AMCActorManager : public AActor, public IMCManagerInfo
 {
 	GENERATED_BODY()
 
@@ -21,12 +20,18 @@ public:
 	AMCActorManager();
 
 protected:
+	UFUNCTION()
+	void OnMCActorDeath(AMCActorBase* DeadMCActor);
 	void SpawnTeam(ETeamType InTeam);
 	void SpawnMCActors();
-	TArray<FIntVector> ApplyMovement(TArray<AMCActorBase*> InMCActors);
+	TArray<FIntVector> ApplyMovement();
+	void AfterCombatCleanup();
+	void TryToAttack();
+	void UpdateHexGridInfo();
+	void RefreshMCActorsState();
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-
+	
 	UFUNCTION()
 	void OnWorldStepTick(int32 StepTickCount);
 
@@ -52,6 +57,12 @@ protected:
 
 	bool IsPositionOccupied(const FIntVector& InPositionToCheck, TArray<FIntVector>& InOccupiedPositions);
 	void ApplyMCActorTeamConfigs(ETeamType InTeam);
-	
+
+protected:
+	UPROPERTY()
 	TArray<AMCActorBase*> MCActors;
+
+	//MCManagerInfo Interface
+public:
+	virtual const TArray<AMCActorBase*> GetEnemyMCActorsInRange(FIntVector TestedPosition, ETeamType TeamId, int32 Range) override;
 };

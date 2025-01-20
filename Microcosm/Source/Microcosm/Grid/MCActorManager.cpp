@@ -18,6 +18,15 @@ AMCActorManager::AMCActorManager()
 	PrimaryActorTick.bCanEverTick = true;
 }
 
+void AMCActorManager::OnMCActorDeath(AMCActorBase* DeadMCActor)
+{
+	if (MCActors.Contains(DeadMCActor))
+	{
+		MCActors.Remove(DeadMCActor);
+		UE_LOG(LogTemp, Warning, TEXT("Actor %s removed from MCActors"), *DeadMCActor->GetName());
+	}
+}
+
 // Called when the game starts or when spawned
 void AMCActorManager::BeginPlay()
 {
@@ -31,18 +40,66 @@ void AMCActorManager::BeginPlay()
 
 void AMCActorManager::OnWorldStepTick(int32 StepTickCount)
 {
-	HexGrid->OccupiedPositions.Empty();
-	HexGrid->OccupiedPositions.Append(ApplyMovement(MCActors));
+	RefreshMCActorsState();
+	//Combat Phase
+	TryToAttack();
+	//Remove dead Actors
+	AfterCombatCleanup();
+	//Movement Phase
+	ApplyMovement();
 }
 
-TArray<FIntVector> AMCActorManager::ApplyMovement(TArray<AMCActorBase*> InMCActors)
+TArray<FIntVector> AMCActorManager::ApplyMovement()
 {
 	TArray<FIntVector> NewPositions;
-	for (AMCActorBase* MCActor : InMCActors)
+	for (AMCActorBase* MCActor : MCActors)
 	{
 		NewPositions.Add(MCActor->ExecuteMovement());
 	}
 	return NewPositions;
+}
+
+void AMCActorManager::AfterCombatCleanup()
+{
+	for (int i = MCActors.Num() - 1; i >= 0; --i)//using reverse for loop to prevent issues with range changing inside the loop
+	{
+		MCActors[i]->OnAfterCombatCleanup();
+	}
+	UpdateHexGridInfo();
+}
+
+void AMCActorManager::TryToAttack()
+{
+	for (AMCActorBase* MCActor : MCActors)
+	{
+		MCActor->ExecuteAttack(this);
+	}
+	UpdateHexGridInfo();
+}
+
+void AMCActorManager::UpdateHexGridInfo()
+{
+	HexGrid->OccupiedPositions.Empty();
+	for (const AMCActorBase* MCActor : MCActors)
+	{
+		if (IsValid(MCActor))
+		{
+			HexGrid->OccupiedPositions.Add(MCActor->PositionOnGrid);
+		}
+
+	}
+}
+
+void AMCActorManager::RefreshMCActorsState()
+{
+	for (AMCActorBase* MCActor : MCActors)
+	{
+		if (IsValid(MCActor))
+		{
+			MCActor->OnNewTurn();
+		}
+	}
+	UpdateHexGridInfo();
 }
 
 void AMCActorManager::SpawnTeam(ETeamType InTeam)
@@ -77,6 +134,8 @@ void AMCActorManager::SpawnTeam(ETeamType InTeam)
 		MCActor->Init(Config, HexGrid);
 		MCActor->FinishSpawning(HexTransform);
 		MCActors.Add(MCActor);
+		MCActor->OnMCActorDeathDelegate.AddDynamic(this, &AMCActorManager::OnMCActorDeath);
+		
 	}
 }
 
@@ -175,6 +234,27 @@ void AMCActorManager::ApplyMCActorTeamConfigs(ETeamType InTeam)
 				break;
 		}
 	}
+}
+
+const TArray<AMCActorBase*> AMCActorManager::GetEnemyMCActorsInRange(FIntVector TestedPosition, ETeamType TeamId, int32 Range)
+{
+	TArray<AMCActorBase*> EnemyMCActors;
+	if (TeamId == ETeamType::None || Range <= 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Invalid team or Range!"));
+		return {};
+	}
+	for (AMCActorBase* MCActor: MCActors)
+	{
+		if (MCActor->GetTeamId() != TeamId && !MCActor->IsDead())
+		{
+			if (bool IsHexInRange = HexGrid->IsHexInRange(TestedPosition, MCActor->GetPositionOnGrid(), Range))
+			{
+				EnemyMCActors.Add(MCActor);
+			}
+		}
+	}
+	return EnemyMCActors;
 }
 
 
