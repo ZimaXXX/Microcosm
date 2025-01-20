@@ -54,7 +54,14 @@ TArray<FIntVector> AMCActorManager::ApplyMovement()
 	TArray<FIntVector> NewPositions;
 	for (AMCActorBase* MCActor : MCActors)
 	{
-		NewPositions.Add(MCActor->ExecuteMovement());
+		FIntVector PrevPosition;
+		FIntVector NewPosition;
+		MCActor->ExecuteMovement(NewPosition, PrevPosition);
+		if (NewPosition != PrevPosition)
+		{
+			NewPositions.Remove(PrevPosition);
+			NewPositions.Add(NewPosition);
+		}
 	}
 	return NewPositions;
 }

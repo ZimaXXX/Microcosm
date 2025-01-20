@@ -4,10 +4,15 @@
 #include "MCActorBase.h"
 #include "MCCommons.h"
 #include "Hex/HexGrid.h"
+#include "Microcosm/Core/MCGameState.h"
 #include "Microcosm/Interfaces/MCManagerInfo.h"
 
 AMCActorBase::AMCActorBase()
 {
+	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bStartWithTickEnabled = false;
+	
 	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("InstancedMeshComponent"));
 	Mesh->SetupAttachment(GetRootComponent());
 }
@@ -21,32 +26,67 @@ void AMCActorBase::Init(const FMCActorAppliedConfig& Config, AHexGrid* InHexGrid
 	CurrentHealth = MaxHealth;
 }
 
+bool AMCActorBase::IsActorLocationMatchGridPosition() const
+{
+	return HexGrid->GetTransformFromHexPosition(PositionOnGrid).GetLocation().Equals(GetActorLocation());
+}
+
+void AMCActorBase::OrderMovementAnimation()
+{
+	if (!IsActorLocationMatchGridPosition())
+	{
+		LerpInitialLocation = GetActorLocation();
+		SetActorTickEnabled(true);
+	}
+}
+
+void AMCActorBase::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+	float Alpha = GetWorld()->GetGameState<AMCGameState>()->GetCurrentTimeStepAlpha();
+	FVector NewLocation = FMath::Lerp(LerpInitialLocation, HexGrid->GetTransformFromHexPosition(PositionOnGrid).GetLocation(), Alpha);
+	SetActorLocation(NewLocation);
+		
+	if (Alpha >= 1.f || IsActorLocationMatchGridPosition())
+	{
+		LerpInitialLocation = FVector::ZeroVector;
+		SetActorLocation(HexGrid->GetTransformFromHexPosition(PositionOnGrid).GetLocation());//ensure proper location without tolerance
+		SetActorTickEnabled(false);
+	}
+}
+
 FIntVector AMCActorBase::MoveTo(FIntVector InTargetPosition)
 {
-	if (bHasAttackedThisTurn && !bCanMoveAfterAttack)
-	{
-		return PositionOnGrid;
-	}
 	FTransform HexTransform = HexGrid->GetTransformFromHexPosition(InTargetPosition);
-	SetActorLocation(HexTransform.GetLocation());
+	//SetActorLocation(HexTransform.GetLocation());
 	PositionOnGrid = InTargetPosition;
+	OrderMovementAnimation();
 	return PositionOnGrid;
 }
 
-FIntVector AMCActorBase::ExecuteMovement()
+void AMCActorBase::ExecuteMovement(FIntVector& OutNewPosition, FIntVector& OutPrevPosition)
 {
+	FIntVector PrevPositionOnGrid = PositionOnGrid;
+	OutPrevPosition = PrevPositionOnGrid;
+
+	OutNewPosition = PositionOnGrid;
 	if (!IsValid(HexGrid))
 	{
 		UE_LOG(LogTemp, Error, TEXT("Hex Grid not available!"));
-		return INVALID_GRID_POSITION;
+		//return INVALID_GRID_POSITION;
+		return;
+	}
+	if (bHasAttackedThisTurn && !bCanMoveAfterAttack)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Cannot move after attack!"));
+		return;
 	}
 	//Is Enemy in Range
 	if (MovementPattern == EMovementPattern::Random)
 	{
 		FIntVector TargetPosition = HexGrid->GetRandomEmptyHexPosition(HexGrid->OccupiedPositions, PositionOnGrid, 1);
-		return MoveTo(TargetPosition);
+		MoveTo(TargetPosition);
 	}
-	return INVALID_GRID_POSITION;
 }
 
 void AMCActorBase::OnNewTurn()

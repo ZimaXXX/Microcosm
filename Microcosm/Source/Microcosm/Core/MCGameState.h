@@ -26,6 +26,11 @@ public:
 	UPROPERTY(BlueprintReadOnly, Replicated)
 	int32 CurrentWorldStepCount = 0;
 
+
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Config)
+	double LastStepTimestamp = 0.f;
+
 	void OnWorldStepTimerTick();
 
 	//Using RPC for speed
@@ -33,4 +38,5 @@ public:
 	void OnWorldStepTimerTick_Multicast(int32 InCurrentWorldStepCount);
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	float GetCurrentTimeStepAlpha() const;
 };

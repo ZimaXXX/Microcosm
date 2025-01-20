@@ -53,9 +53,6 @@ struct FMCActorAppliedConfig
 	int32 MaxHealth = 1;
 };
 
-
-
-
 /**
  * 
  */
@@ -68,6 +65,7 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnMCActorDeathDelegate OnMCActorDeathDelegate;
 	
+
 	AMCActorBase();
 	
 	UPROPERTY(BlueprintReadOnly)
@@ -77,8 +75,11 @@ public:
 
 
 	void Init(const FMCActorAppliedConfig& Config, AHexGrid* InHexGrid);
+	bool IsActorLocationMatchGridPosition() const;
+	void OrderMovementAnimation();
+	virtual void Tick(float DeltaSeconds) override;
 	FIntVector MoveTo(FIntVector InTargetPosition);
-	FIntVector ExecuteMovement();
+	void ExecuteMovement(FIntVector& OutNewPosition, FIntVector& OutPrevPosition);
 	void OnNewTurn();
 	void OnDeath();
 	void ApplyDamage(int32 Damage);
@@ -137,4 +138,5 @@ protected:
 	//State
 	bool bHasAttackedThisTurn = false;
 	int32 CurrentHealth = 0;
+	FVector LerpInitialLocation = FVector::ZeroVector;
 };

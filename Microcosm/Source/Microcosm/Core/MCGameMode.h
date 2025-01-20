@@ -27,12 +27,6 @@ public:
 protected:
 	FTimerHandle TimerHandle;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Config)
-	float WorldTimeStep = 0.1f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Config)
-	int32 WorldRandomSeed = 0;
-
 	FRandomStream WorldRandomStream;
 
 	//IWorldStateInterface
