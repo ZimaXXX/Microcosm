@@ -111,7 +111,6 @@ void AMCActorManager::ApplyMCActorTeamConfigs(ETeamType InTeam)
 
 	for (FMCActorConfig Config: *MCActorConfigs)
 	{
-		FMCActorAppliedConfig* pAppliedConfig = new FMCActorAppliedConfig();
 		FMCActorAppliedConfig AppliedConfig;
 		if (!Config.bUseRandomPosition && Config.StartingPosition == INVALID_GRID_POSITION)
 		{
@@ -168,9 +167,12 @@ void AMCActorManager::ApplyMCActorTeamConfigs(ETeamType InTeam)
 		{
 			case ETeamType::Blue:
 				AppliedBlueActorConfigs.Add(AppliedConfig);
+				break;
 			case ETeamType::Red:
 				AppliedRedActorConfigs.Add(AppliedConfig);
-			default:;
+				break;
+			default:
+				break;
 		}
 	}
 }
