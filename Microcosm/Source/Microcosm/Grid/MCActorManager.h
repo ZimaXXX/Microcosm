@@ -25,7 +25,7 @@ protected:
 	void OnMCActorDeath(AMCActorBase* DeadMCActor);
 	void SpawnTeam(ETeamType InTeam);
 	void SpawnMCActors();
-	TArray<FIntVector> ApplyMovement();
+	void ApplyMovement();
 	void AfterCombatCleanup();
 	void TryToAttack();
 	void UpdateHexGridInfo();
@@ -39,12 +39,12 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Config")
 	AHexGrid* HexGrid = nullptr;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Config")
-	TArray<FMCActorConfig> BlueActorConfigs;
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Config")
+	//TArray<FMCActorConfig> BlueActorConfigs;
 	TArray<FMCActorAppliedConfig> AppliedBlueActorConfigs;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Config")
-	TArray<FMCActorConfig> RedActorConfigs;
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Config")
+	//TArray<FMCActorConfig> RedActorConfigs;
 	TArray<FMCActorAppliedConfig> AppliedRedActorConfigs;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Config")

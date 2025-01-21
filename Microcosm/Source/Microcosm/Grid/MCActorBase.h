@@ -22,7 +22,8 @@ enum class EMovementPattern : uint8
 {
 	None = 0,
 	Random = 1,
-	AStar = 2
+	AStar = 2,
+	AStarAndRandom = 3//If no enemy move using random
 };
 
 USTRUCT(BlueprintType)
@@ -36,6 +37,9 @@ struct FMCActorConfig
 	FIntVector StartingPosition = INVALID_GRID_POSITION;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	EMovementPattern MovementPattern = EMovementPattern::AStarAndRandom;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bUseRandomHealth = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "!bUseRandomHealth"))
 	int32 MaxHealth = 1;
@@ -45,12 +49,9 @@ USTRUCT(BlueprintType)
 struct FMCActorAppliedConfig
 {
 	GENERATED_BODY();
-	UPROPERTY(BlueprintReadOnly)
 	ETeamType TeamId = ETeamType::None;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "!bUseRandomPosition"))
 	FIntVector StartingPosition = INVALID_GRID_POSITION;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "!bUseRandomHealth"))
+	EMovementPattern MovementPattern = EMovementPattern::AStarAndRandom;
 	int32 MaxHealth = 1;
 };
 
@@ -76,11 +77,14 @@ public:
 
 
 	void Init(const FMCActorAppliedConfig& Config, AHexGrid* InHexGrid);
-	bool IsActorLocationMatchGridPosition() const;
+	bool IsActorLocationMatchGridPosition(float Tolerance = UE_KINDA_SMALL_NUMBER) const;
 	void OrderMovementAnimation();
 	virtual void Tick(float DeltaSeconds) override;
 	FIntVector MoveTo(FIntVector InTargetPosition);
 	void ExecuteMovement(FIntVector& OutNewPosition, FIntVector& OutPrevPosition, IMCManagerInfo* ManagerInfo);
+	void ApplyRandomMovementPattern(
+	);
+	void ApplyAStarMovementPattern(IMCManagerInfo* ManagerInfo, bool bUseRandomPattern = false);
 	void OnNewTurn();
 	void OnDeath();
 	void ApplyDamage(int32 Damage);

@@ -24,9 +24,6 @@ protected:
 
 	void OnWorldStepTimerTick();
 
-public:
-	virtual void PostInitProperties() override;
-
 protected:
 	FTimerHandle TimerHandle;
 

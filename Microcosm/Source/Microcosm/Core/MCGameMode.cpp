@@ -13,9 +13,7 @@ AMCGameMode::AMCGameMode()
 
 void AMCGameMode::BeginPlay()
 {
-	Super::BeginPlay();
-
-	
+	Super::BeginPlay();	
 	
 	GetWorld()->GetTimerManager().SetTimer(
 		TimerHandle,           // Timer handle
@@ -35,13 +33,6 @@ void AMCGameMode::PostInitializeComponents()
 		Cast<AMCWorldSettings>(GetWorldSettings())->WorldRandomSeed = FMath::Rand32();
 	}
 	WorldRandomStream.Initialize(Cast<AMCWorldSettings>(GetWorldSettings())->WorldRandomSeed);
-}
-
-void AMCGameMode::PostInitProperties()
-{
-	Super::PostInitProperties();
-	//We need to check WorldRandomSeed after Property Value from BP is obtained
-	
 }
 
 FRandomStream& AMCGameMode::GetWorldRandomStream()

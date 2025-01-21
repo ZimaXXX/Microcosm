@@ -5,6 +5,7 @@
 #include "Components/InstancedStaticMeshComponent.h"
 #include "GameFramework/GameModeBase.h"
 #include "Microcosm/Core/MCGameMode.h"
+#include "Microcosm/Core/MCWorldSettings.h"
 #include "Microcosm/Grid/MCCommons.h"
 #include "Microcosm/Interfaces/WorldStateInterface.h"
 
@@ -45,6 +46,9 @@ void AHexGrid::CreateHexagonMap()
 	ensure(InstancedMeshComponent);
 	ensure(InstancedMeshComponent->GetStaticMesh());
 
+	MapRadius = Cast<AMCWorldSettings>(GetWorldSettings())->GridRadius;
+	float HolesRatio = Cast<AMCWorldSettings>(GetWorldSettings())->GridHolesRatio;
+	
 	if (MapRadius <= 0)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Map Radius invalid!"));
@@ -55,7 +59,7 @@ void AHexGrid::CreateHexagonMap()
 	const FVector BoxExtent = Bounds.BoxExtent;
 
 	TArray<FIntVector> HexGrid = GenerateHexGrid(MapRadius);
-	RemoveRandomHexesWithConnectivity(HexGrid, 0.5f);
+	RemoveRandomHexesWithConnectivity(HexGrid, HolesRatio);
 
 	float MeshX = 2 * BoxExtent.X;
 	for (const FIntVector& Hex : HexGrid)
@@ -80,10 +84,10 @@ void AHexGrid::LogHexData()
 {
 	for (int32 Index = 0; Index < InstancedMeshComponent->GetNumInstances(); ++Index)
 	{
-		int32 P = InstancedMeshComponent->PerInstanceSMCustomData[Index * 3];
-		int32 Q = InstancedMeshComponent->PerInstanceSMCustomData[Index * 3 + 1];
-		int32 R = InstancedMeshComponent->PerInstanceSMCustomData[Index * 3 + 2];
-		UE_LOG(LogTemp, Display, TEXT("Hex Index %d Pos: P: %d Q: %d R: %d"), Index, P, Q, R);
+		int32 Q = InstancedMeshComponent->PerInstanceSMCustomData[Index * 3];
+		int32 R = InstancedMeshComponent->PerInstanceSMCustomData[Index * 3 + 1];
+		int32 S = InstancedMeshComponent->PerInstanceSMCustomData[Index * 3 + 2];
+		UE_LOG(LogTemp, Display, TEXT("Hex Index %d Pos: Q: %d R: %d S: %d"), Index, Q, R, S);
 	}
 }
 

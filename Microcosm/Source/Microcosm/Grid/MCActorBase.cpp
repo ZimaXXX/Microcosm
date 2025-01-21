@@ -14,6 +14,7 @@ AMCActorBase::AMCActorBase()
 	
 	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("InstancedMeshComponent"));
 	Mesh->SetupAttachment(GetRootComponent());
+	Mesh->CastShadow = false;
 }
 
 void AMCActorBase::Init(const FMCActorAppliedConfig& Config, AHexGrid* InHexGrid)
@@ -23,11 +24,12 @@ void AMCActorBase::Init(const FMCActorAppliedConfig& Config, AHexGrid* InHexGrid
 	HexGrid = InHexGrid;
 	PositionOnGrid = Config.StartingPosition;
 	CurrentHealth = MaxHealth;
+	MovementPattern = Config.MovementPattern;
 }
 
-bool AMCActorBase::IsActorLocationMatchGridPosition() const
+bool AMCActorBase::IsActorLocationMatchGridPosition(float Tolerance) const
 {
-	return HexGrid->GetTransformFromHexPosition(PositionOnGrid).GetLocation().Equals(GetActorLocation());
+	return HexGrid->GetTransformFromHexPosition(PositionOnGrid).GetLocation().Equals(GetActorLocation(), Tolerance);
 }
 
 void AMCActorBase::OrderMovementAnimation()
@@ -43,6 +45,8 @@ void AMCActorBase::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 	float Alpha = GetWorld()->GetGameState<AMCGameState>()->GetCurrentTimeStepAlpha();
+	Alpha *= 1.1f;// Speed up Alpha to allow movement finish before another turn
+	Alpha = FMath::Clamp(Alpha, 0, 1);
 	FVector NewLocation = FMath::Lerp(LerpInitialLocation, HexGrid->GetTransformFromHexPosition(PositionOnGrid).GetLocation(), Alpha);
 	SetActorLocation(NewLocation);
 		
@@ -67,8 +71,8 @@ void AMCActorBase::ExecuteMovement(FIntVector& OutNewPosition, FIntVector& OutPr
 {
 	FIntVector PrevPositionOnGrid = PositionOnGrid;
 	OutPrevPosition = PrevPositionOnGrid;
-
 	OutNewPosition = PositionOnGrid;
+	
 	if (!IsValid(HexGrid))
 	{
 		UE_LOG(LogTemp, Error, TEXT("Hex Grid not available!"));
@@ -81,24 +85,44 @@ void AMCActorBase::ExecuteMovement(FIntVector& OutNewPosition, FIntVector& OutPr
 		return;
 	}
 	//Is Enemy in Range
-	if (MovementPattern == EMovementPattern::Random)
+	switch (MovementPattern)
+	{
+	case EMovementPattern::Random:
+		ApplyRandomMovementPattern();
+		break;
+	case EMovementPattern::AStar:
+		ApplyAStarMovementPattern(ManagerInfo, false);
+		break;
+	case EMovementPattern::AStarAndRandom:
+		ApplyAStarMovementPattern(ManagerInfo, true);
+		break;
+	default:
+		break;
+	}
+	OutNewPosition = PositionOnGrid;
+}
+void AMCActorBase::ApplyRandomMovementPattern()
+{
+	FIntVector TargetPosition = HexGrid->GetRandomEmptyHexPosition(HexGrid->OccupiedPositions, PositionOnGrid, 1);
+	MoveTo(TargetPosition);
+}
+void AMCActorBase::ApplyAStarMovementPattern(IMCManagerInfo* ManagerInfo, bool bUseRandomPattern)
+{
+	int32 Distance;
+	const AMCActorBase* ClosestEnemy = ManagerInfo->GetClosestEnemyMCActor(PositionOnGrid, TeamId, Distance);
+	if (IsValid(ClosestEnemy) && Distance > 1 && Distance > AttackRange)
+	{
+		TArray<FIntVector> Path = HexGrid->FindPathWithAStar(PositionOnGrid, ClosestEnemy->PositionOnGrid);
+		if (Path.Num() > 1)
+		{
+			FIntVector TargetPosition = Path[1];
+			MoveTo(TargetPosition);
+		}
+	}
+	else if (bUseRandomPattern && !IsValid(ClosestEnemy))//execute Random if no enemy
 	{
 		FIntVector TargetPosition = HexGrid->GetRandomEmptyHexPosition(HexGrid->OccupiedPositions, PositionOnGrid, 1);
 		MoveTo(TargetPosition);
-	}
-	else if (MovementPattern == EMovementPattern::AStar)
-	{
-		int32 Distance;
-		const AMCActorBase* ClosestEnemy = ManagerInfo->GetClosestEnemyMCActor(PositionOnGrid, TeamId, Distance);
-		if (IsValid(ClosestEnemy) && Distance > 1 && Distance > AttackRange)
-		{
-			TArray<FIntVector> Path = HexGrid->FindPathWithAStar(PositionOnGrid, ClosestEnemy->PositionOnGrid);
-			if (Path.Num() > 1)
-			{
-				FIntVector TargetPosition = Path[1];
-				MoveTo(TargetPosition);
-			}
-		}
 	}
 }
 

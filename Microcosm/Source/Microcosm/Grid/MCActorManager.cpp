@@ -8,6 +8,7 @@
 #include "GameFramework/GameModeBase.h"
 #include "Hex/HexGrid.h"
 #include "Microcosm/Core/MCGameState.h"
+#include "Microcosm/Core/MCWorldSettings.h"
 #include "Microcosm/Interfaces/WorldStateInterface.h"
 
 
@@ -49,9 +50,8 @@ void AMCActorManager::OnWorldStepTick(int32 StepTickCount)
 	ApplyMovement();
 }
 
-TArray<FIntVector> AMCActorManager::ApplyMovement()
+void AMCActorManager::ApplyMovement()
 {
-	TArray<FIntVector> NewPositions;
 	for (AMCActorBase* MCActor : MCActors)
 	{
 		FIntVector PrevPosition;
@@ -59,11 +59,10 @@ TArray<FIntVector> AMCActorManager::ApplyMovement()
 		MCActor->ExecuteMovement(NewPosition, PrevPosition, this);
 		if (NewPosition != PrevPosition)
 		{
-			NewPositions.Remove(PrevPosition);
-			NewPositions.Add(NewPosition);
+			HexGrid->OccupiedPositions.Remove(PrevPosition);
+			HexGrid->OccupiedPositions.Add(NewPosition);
 		}
 	}
-	return NewPositions;
 }
 
 void AMCActorManager::AfterCombatCleanup()
@@ -168,11 +167,11 @@ void AMCActorManager::ApplyMCActorTeamConfigs(ETeamType InTeam)
 	const TArray<FMCActorConfig>* MCActorConfigs = nullptr;
 	if (InTeam == ETeamType::Blue)
 	{
-		MCActorConfigs = &BlueActorConfigs;
+		MCActorConfigs = &(Cast<AMCWorldSettings>(GetWorldSettings())->BlueActorConfigs);
 	}
 	else if (InTeam == ETeamType::Red)
 	{
-		MCActorConfigs = &RedActorConfigs;
+		MCActorConfigs = &(Cast<AMCWorldSettings>(GetWorldSettings())->RedActorConfigs);
 	}
 
 	for (FMCActorConfig Config: *MCActorConfigs)
@@ -229,6 +228,7 @@ void AMCActorManager::ApplyMCActorTeamConfigs(ETeamType InTeam)
 		}
 
 		AppliedConfig.TeamId = InTeam;
+		AppliedConfig.MovementPattern = Config.MovementPattern;
 		switch (InTeam)
 		{
 			case ETeamType::Blue:

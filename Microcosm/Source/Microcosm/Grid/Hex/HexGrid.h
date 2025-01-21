@@ -26,13 +26,7 @@ public:
 		FIntVector(0, -1, 1)   // Southeast
 	};
 
-	int32 MapRadius = 4;
-	TArray<FIntVector> HolesInMap {
-		FIntVector(1, -1, 0),  // East
-		FIntVector(0, 1, -1),  // Northwest
-		FIntVector(-1, 1, 0),  // West
-		FIntVector(0, -1, 1)   // Southeast
-	};
+	int32 MapRadius = 0;
 
 	UFUNCTION(BlueprintCallable, Category="HexGrid")
 	void CreateHexagonMap();
