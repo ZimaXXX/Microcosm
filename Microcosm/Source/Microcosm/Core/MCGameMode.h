@@ -18,8 +18,11 @@ class MICROCOSM_API AMCGameMode : public AGameModeBase, public IWorldStateInterf
 public:
 	AMCGameMode();
 protected:
-	void OnWorldStepTimerTick();
+
 	virtual void BeginPlay() override;
+	virtual void PostInitializeComponents() override;
+
+	void OnWorldStepTimerTick();
 
 public:
 	virtual void PostInitProperties() override;
@@ -32,4 +35,5 @@ protected:
 	//IWorldStateInterface
 public:
 	virtual FRandomStream& GetWorldRandomStream() override;
+
 };
