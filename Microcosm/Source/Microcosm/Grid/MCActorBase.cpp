@@ -152,6 +152,7 @@ void AMCActorBase::OnDeath()
 void AMCActorBase::ApplyDamage(int32 Damage)
 {
 	CurrentHealth -= Damage;
+	ReceiveOnDamage();
 }
 
 void AMCActorBase::OnAfterCombatCleanup()
@@ -177,5 +178,10 @@ void AMCActorBase::ExecuteAttack(IMCManagerInfo* ManagerInfo)
 			}
 		}	
 	}
+}
+
+UWorld* AMCActorBase::BP_GetWorld()
+{
+	return GetWorld();
 }
 

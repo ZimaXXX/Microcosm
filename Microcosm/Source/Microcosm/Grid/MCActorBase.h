@@ -100,6 +100,7 @@ public:
 	void ApplyAStarMovementPattern(IMCManagerInfo* ManagerInfo, bool bUseRandomPattern = false);
 	void OnNewTurn();
 	void OnDeath();
+	
 	void ApplyDamage(int32 Damage);
 	void OnAfterCombatCleanup();
 	void ExecuteAttack(IMCManagerInfo* ManagerInfo);
@@ -109,7 +110,11 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
 	UStaticMeshComponent* Mesh;
 
-
+	UFUNCTION(BlueprintImplementableEvent, Category = "Events")
+	void ReceiveOnDamage();
+	
+	UFUNCTION(BlueprintPure, Category = "Events")
+	UWorld* BP_GetWorld();
 	//Getters
 public:
 	bool IsDead() const
