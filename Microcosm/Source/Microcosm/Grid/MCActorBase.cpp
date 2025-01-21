@@ -25,6 +25,10 @@ void AMCActorBase::Init(const FMCActorAppliedConfig& Config, AHexGrid* InHexGrid
 	PositionOnGrid = Config.StartingPosition;
 	CurrentHealth = MaxHealth;
 	MovementPattern = Config.MovementPattern;
+	SpeedInWorldSteps = Config.SpeedInWorldSteps;
+	AttackPower = Config.AttackPower;
+	AttackRange = Config.AttackRange;
+	bCanMoveAfterAttack = Config.bCanMoveAfterAttack;
 }
 
 bool AMCActorBase::IsActorLocationMatchGridPosition(float Tolerance) const
@@ -64,6 +68,7 @@ FIntVector AMCActorBase::MoveTo(FIntVector InTargetPosition)
 	//SetActorLocation(HexTransform.GetLocation());
 	PositionOnGrid = InTargetPosition;
 	OrderMovementAnimation();
+	LastWorldStepTimeWithMovement = GetWorld()->GetGameState<AMCGameState>()->CurrentWorldStepCount;
 	return PositionOnGrid;
 }
 
@@ -82,6 +87,12 @@ void AMCActorBase::ExecuteMovement(FIntVector& OutNewPosition, FIntVector& OutPr
 	if (bHasAttackedThisTurn && !bCanMoveAfterAttack)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Cannot move after attack!"));
+		return;
+	}
+	int32 CurrentWorldStepCount = GetWorld()->GetGameState<AMCGameState>()->CurrentWorldStepCount;
+	if (LastWorldStepTimeWithMovement > 0 && CurrentWorldStepCount - LastWorldStepTimeWithMovement < SpeedInWorldSteps)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Cannot move because of speed!"));
 		return;
 	}
 	//Is Enemy in Range
@@ -110,7 +121,7 @@ void AMCActorBase::ApplyAStarMovementPattern(IMCManagerInfo* ManagerInfo, bool b
 {
 	int32 Distance;
 	const AMCActorBase* ClosestEnemy = ManagerInfo->GetClosestEnemyMCActor(PositionOnGrid, TeamId, Distance);
-	if (IsValid(ClosestEnemy) && Distance > 1 && Distance > AttackRange)
+	if (IsValid(ClosestEnemy) && Distance > 1)
 	{
 		TArray<FIntVector> Path = HexGrid->FindPathWithAStar(PositionOnGrid, ClosestEnemy->PositionOnGrid);
 		if (Path.Num() > 1)

@@ -38,11 +38,21 @@ struct FMCActorConfig
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	EMovementPattern MovementPattern = EMovementPattern::AStarAndRandom;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 SpeedInWorldSteps = 1;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bUseRandomHealth = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "!bUseRandomHealth"))
 	int32 MaxHealth = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bCanMoveAfterAttack = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 AttackRange = 1;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 AttackPower = 1;
 };
 
 USTRUCT(BlueprintType)
@@ -53,6 +63,11 @@ struct FMCActorAppliedConfig
 	FIntVector StartingPosition = INVALID_GRID_POSITION;
 	EMovementPattern MovementPattern = EMovementPattern::AStarAndRandom;
 	int32 MaxHealth = 1;
+	int32 SpeedInWorldSteps = 1;
+	bool bCanMoveAfterAttack = false;
+	int32 AttackRange = 1;
+	int32 AttackPower = 1;
+	
 };
 
 /**
@@ -73,8 +88,6 @@ public:
 	UPROPERTY(BlueprintReadOnly)
 	FIntVector PositionOnGrid = INVALID_GRID_POSITION;
 	AHexGrid* HexGrid = nullptr;
-	
-
 
 	void Init(const FMCActorAppliedConfig& Config, AHexGrid* InHexGrid);
 	bool IsActorLocationMatchGridPosition(float Tolerance = UE_KINDA_SMALL_NUMBER) const;
@@ -133,9 +146,8 @@ protected:
 	//Config
 	ETeamType TeamId = ETeamType::None;
 	int32 MaxHealth = 0;
-	EMovementPattern MovementPattern = EMovementPattern::AStar;
-
-	//TODO Add to Init
+	EMovementPattern MovementPattern = EMovementPattern::None;
+	int32 SpeedInWorldSteps = 1;
 	bool bCanMoveAfterAttack = false;
 	int32 AttackRange = 1;
 	int32 AttackPower = 1;
@@ -144,4 +156,5 @@ protected:
 	bool bHasAttackedThisTurn = false;
 	int32 CurrentHealth = 0;
 	FVector LerpInitialLocation = FVector::ZeroVector;
+	int32 LastWorldStepTimeWithMovement = 0;
 };

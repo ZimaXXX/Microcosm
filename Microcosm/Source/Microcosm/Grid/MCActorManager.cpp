@@ -229,6 +229,10 @@ void AMCActorManager::ApplyMCActorTeamConfigs(ETeamType InTeam)
 
 		AppliedConfig.TeamId = InTeam;
 		AppliedConfig.MovementPattern = Config.MovementPattern;
+		AppliedConfig.SpeedInWorldSteps = Config.SpeedInWorldSteps;
+		AppliedConfig.AttackPower = Config.AttackPower;
+		AppliedConfig.AttackRange = Config.AttackRange;
+		AppliedConfig.bCanMoveAfterAttack = Config.bCanMoveAfterAttack;
 		switch (InTeam)
 		{
 			case ETeamType::Blue:
