@@ -22,43 +22,57 @@ AHexGrid::AHexGrid()
 	InstancedMeshComponent->NumCustomDataFloats = 3;
 }
 
+TArray<FIntVector> AHexGrid::GenerateHexGrid(int32 Radius)
+{
+	TArray<FIntVector> HexGrid;
+	for (int32 q = -Radius; q <= Radius; ++q)
+	{
+		for (int32 r = -Radius; r <= Radius; ++r)
+		{
+			int32 s = -q - r;
+			if (FMath::Abs(s) <= Radius)
+			{
+				HexGrid.Add(FIntVector(q, r, s));
+			}
+		}
+	}
+	return HexGrid;
+}
+
 
 void AHexGrid::CreateHexagonMap()
 {
 	ensure(InstancedMeshComponent);
 	ensure(InstancedMeshComponent->GetStaticMesh());
+
+	if (MapRadius <= 0)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Map Radius invalid!"));
+		return;
+	}
+	
 	const FBoxSphereBounds Bounds = InstancedMeshComponent->GetStaticMesh()->GetBounds();
 	const FVector BoxExtent = Bounds.BoxExtent;
 
-	for (int q = -MapRadius; q <= MapRadius; q++)
+	TArray<FIntVector> HexGrid = GenerateHexGrid(MapRadius);
+	RemoveRandomHexesWithConnectivity(HexGrid, 0.5f);
+
+	float MeshX = 2 * BoxExtent.X;
+	for (const FIntVector& Hex : HexGrid)
 	{
-		const int32 R1 = std::max(-MapRadius, -q - MapRadius);
-		const int32 R2 = std::min(MapRadius, -q + MapRadius);
+		FVector WorldPosition = HexToWorldPosition(Hex, MeshX, MeshX);
 		
-		for (int r = R1; r <= R2; r++)
-		{
-			if (HolesInMap.Num() > 0)
-			{
-				FIntVector PotentialHole = FIntVector(q, r, -q -r);
-				if (HolesInMap.Contains(PotentialHole))
-				{
-					continue;
-				}
-			}
-			const float LocationX = q * BoxExtent.X + static_cast<float>(r * 2 * BoxExtent.X);
-			const float LocationY = static_cast<float>(q * 2 * BoxExtent.Y) - BoxExtent.Z * q;
-			
-			FVector Location = FVector(LocationX, LocationY, BoxExtent.Z);
-			FRotator Rotation = FRotator::ZeroRotator;
-			FTransform Transform = FTransform(Rotation, Location);
-			
-			const int32 InstanceIndex = InstancedMeshComponent->AddInstance(Transform);
-			//Store position
-			InstancedMeshComponent->SetCustomDataValue(InstanceIndex, 0, q);
-			InstancedMeshComponent->SetCustomDataValue(InstanceIndex, 1, r);
-			InstancedMeshComponent->SetCustomDataValue(InstanceIndex, 2, -q -r);
-		}
+		// Debug visualization
+		//DrawDebugSphere(GetWorld(), WorldPosition, 10.0f, 12, FColor::Green, false, 10.0f);
+
+		// Add instance to the ISM
+		FTransform InstanceTransform(FRotator::ZeroRotator, WorldPosition, FVector::OneVector);
+		const int32 InstanceIndex = InstancedMeshComponent->AddInstance(InstanceTransform);
+		InstancedMeshComponent->SetCustomDataValue(InstanceIndex, 0, Hex.X);
+		InstancedMeshComponent->SetCustomDataValue(InstanceIndex, 1, Hex.Y);
+		InstancedMeshComponent->SetCustomDataValue(InstanceIndex, 2, Hex.Z);
 	}
+	
 	//LogHexData();
 }
 
@@ -178,6 +192,29 @@ bool AHexGrid::IsHexInRange(FIntVector InTestedPosition, FIntVector InHexPositio
 	return Distance <= Range;
 }
 
+FVector AHexGrid::HexToWorldPosition(FIntVector Hex, float HexWidth, float HexHeight)
+{
+	float x = HexWidth * (Hex.X + 0.5f * Hex.Y);
+	float y = HexHeight * 0.866f * Hex.Y; // 0.866 = sqrt(3)/2
+
+	return FVector(x, y, 0); // Z remains 0 for a flat grid
+}
+void AHexGrid::PlaceHexGrid(UInstancedStaticMeshComponent* ISMComponent, int32 Radius, float HexSize)
+{
+	if (!ISMComponent) return;
+
+	TArray<FIntVector> HexGrid = GenerateHexGrid(Radius);
+
+	for (const FIntVector& Hex : HexGrid)
+	{
+		FVector WorldPosition = HexToWorldPosition(Hex, HexSize, 10);
+
+		// Add instance to the ISM
+		FTransform InstanceTransform(FRotator::ZeroRotator, WorldPosition, FVector::OneVector);
+		ISMComponent->AddInstance(InstanceTransform);
+	}
+}
+
 bool AHexGrid::IsHexPassable(FIntVector InTestedPosition)
 {
 	return IsHexAtPosition(InTestedPosition) && !OccupiedPositions.Contains(InTestedPosition);
@@ -208,6 +245,82 @@ TArray<FIntVector> AHexGrid::GetHexNeighbors(FIntVector InTestedPosition)
     	return Neighbors;
 }
 
+void AHexGrid::RemoveRandomHexesWithConnectivity(TArray<FIntVector>& HexGrid, float Ratio)
+{
+	Ratio = FMath::Clamp(Ratio, 0.f, 1.f);
+	if (Ratio == 0.f)//no removals
+	{
+		return;
+	}
+	if (IWorldStateInterface* WorldStateInterface = Cast<IWorldStateInterface>(GetWorld()->GetAuthGameMode()))
+	{
+		FRandomStream& WorldRandomStream = WorldStateInterface->GetWorldRandomStream();
+		int32 TotalHexes = HexGrid.Num();
+		int32 NumToRemove = FMath::FloorToInt(TotalHexes * Ratio);
+	
+		// Shuffle the hex grid
+		for (int32 i = HexGrid.Num() - 1; i > 0; --i)
+		{
+			int32 RandomIndex = WorldRandomStream.RandRange(0, i);
+			HexGrid.Swap(i, RandomIndex);
+		}
+
+		// Remove hexes one by one, ensuring connectivity
+		for (int32 i = 0; i < NumToRemove; ++i)
+		{
+			FIntVector HexToRemove = HexGrid[i];
+
+			// Simulate removal
+			TArray<FIntVector> TestGrid = HexGrid;
+			TestGrid.Remove(HexToRemove);
+
+			// Check if the grid is still connected
+			if (IsGridConnected(TestGrid, FIntVector(0, 0, 0)))
+			{
+				HexGrid.Remove(HexToRemove); // Apply removal
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Skipping removal of hex (%d, %d, %d) to maintain connectivity."), 
+					   HexToRemove.X, HexToRemove.Y, HexToRemove.Z);
+			}
+		}
+	}
+}
+
+bool AHexGrid::IsGridConnected(const TArray<FIntVector>& RemainingHexes, const FIntVector& StartHex)
+{
+	TArray<FIntVector> Visited;
+	TArray<FIntVector> Queue = { StartHex };
+
+	while (Queue.Num() > 0)
+	{
+		FIntVector Current = Queue[0];
+		Queue.RemoveAt(0);
+
+		// Skip if already visited
+		if (Visited.Contains(Current))
+		{
+			continue;
+		}
+
+		// Mark as visited
+		Visited.Add(Current);
+
+		// Process neighbors
+		for (const FIntVector& Direction : HexDirections) // Define HexDirections for your coordinate system
+		{
+			FIntVector Neighbor = Current + Direction;
+			if (RemainingHexes.Contains(Neighbor) && !Visited.Contains(Neighbor))
+			{
+				Queue.Add(Neighbor);
+			}
+		}
+	}
+
+	// Grid is connected if all remaining hexes are visited
+	return Visited.Num() == RemainingHexes.Num();
+}
 
 FIntVector AHexGrid::GetRandomEmptyHexPosition(TArray<FIntVector> ExcludedPositions, FIntVector InTestedPosition, int32 InRange) const
 {
