@@ -62,8 +62,9 @@ public:
 	{
 		return 2 * MapRadius;
 	}
-	
+
 protected:
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
 	UInstancedStaticMeshComponent* InstancedMeshComponent;
 

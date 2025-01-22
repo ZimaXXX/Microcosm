@@ -28,3 +28,10 @@ float AMCGameState::GetCurrentTimeStepAlpha() const
 	//UE_LOG(LogTemp, Error, TEXT("Current Alpha: %f"), Alpha);
 	return FMath::Clamp(Alpha, 0.f, 1.f);
 }
+
+void AMCGameState::UpdateAliveMCActorsCount(int32 InBlueCount, int32 InRedCount)
+{
+	BlueCount = InBlueCount;
+	RedCount = InRedCount;
+	OnAliveMCActorsCountUpdatedDelegate.Broadcast(BlueCount, RedCount);
+}

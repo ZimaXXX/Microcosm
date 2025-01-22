@@ -77,10 +77,14 @@ UCLASS(Blueprintable, BlueprintType, Abstract)
 class MICROCOSM_API AMCActorBase : public AActor
 {
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMCActorDeathDelegate, AMCActorBase*, DeadMCActor);
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnHealthChangedDelegate, int32, CurrentHealth);
 	GENERATED_BODY()
 public:
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnMCActorDeathDelegate OnMCActorDeathDelegate;
+	
+	UPROPERTY(BlueprintAssignable, Category = "Events")
+	FOnHealthChangedDelegate OnHealthChangedDelegate;
 	
 
 	AMCActorBase();
@@ -117,31 +121,33 @@ protected:
 	UWorld* BP_GetWorld();
 	//Getters
 public:
+	UFUNCTION(BlueprintPure, Category = "State")
 	bool IsDead() const
 	{
 		return CurrentHealth <= 0;
 	}
-	
+	UFUNCTION(BlueprintPure, Category = "State")
 	FIntVector GetPositionOnGrid() const
 	{
 		return PositionOnGrid;
 	}
-
+	UFUNCTION(BlueprintPure, Category = "State")
 	ETeamType GetTeamId() const
 	{
 		return TeamId;
 	}
-
+	UFUNCTION(BlueprintPure, Category = "State")
 	int32 GetMaxHealth() const
 	{
 		return MaxHealth;
 	}
-
-	 int32 GetAttackRange() const
+	UFUNCTION(BlueprintPure, Category = "State")
+	int32 GetAttackRange() const
 	{
 		return AttackRange;
 	}
 
+	UFUNCTION(BlueprintPure, Category = "State")
 	int32 GetCurrentHealth() const
 	{
 		return CurrentHealth;

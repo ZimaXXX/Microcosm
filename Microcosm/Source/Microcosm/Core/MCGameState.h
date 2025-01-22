@@ -7,6 +7,7 @@
 #include "MCGameState.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWorldStepTickDelegate, int32, StepTickCount);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnAliveMCActorsCountUpdatedDelegate, int32, BlueCount, int32, RedCount);
 
 /**
  * 
@@ -19,6 +20,9 @@ class MICROCOSM_API AMCGameState : public AGameStateBase
 public:
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnWorldStepTickDelegate OnWorldStepTickDelegate;
+
+	UPROPERTY(BlueprintAssignable, Category = "Events")
+	FOnAliveMCActorsCountUpdatedDelegate OnAliveMCActorsCountUpdatedDelegate;
 	
 	UPROPERTY(BlueprintReadOnly)
 	int32 CurrentWorldStepCount = 0;
@@ -26,7 +30,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Config)
 	double LastStepTimestamp = 0.f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = State)
+	int32 BlueCount = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = State)
+	int32 RedCount = 0;
+	
 	void OnWorldStepTimerTick();
 	
 	float GetCurrentTimeStepAlpha() const;
+	
+	void UpdateAliveMCActorsCount(int32 InBlueCount, int32 InRedCount);
 };

@@ -29,6 +29,7 @@ protected:
 	void AfterCombatCleanup();
 	void TryToAttack();
 	void UpdateHexGridInfo();
+	void UpdateMCActorsCount();
 	void RefreshMCActorsState();
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

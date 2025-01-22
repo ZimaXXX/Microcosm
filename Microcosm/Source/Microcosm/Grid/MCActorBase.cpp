@@ -152,6 +152,7 @@ void AMCActorBase::OnDeath()
 void AMCActorBase::ApplyDamage(int32 Damage)
 {
 	CurrentHealth -= Damage;
+	OnHealthChangedDelegate.Broadcast(CurrentHealth);
 	ReceiveOnDamage();
 }
 

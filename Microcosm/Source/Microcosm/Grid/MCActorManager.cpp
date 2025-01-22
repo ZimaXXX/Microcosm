@@ -33,11 +33,14 @@ void AMCActorManager::BeginPlay()
 {
 	Super::BeginPlay();
 	GetWorld()->GetGameState<AMCGameState>()->OnWorldStepTickDelegate.AddDynamic(this, &AMCActorManager::OnWorldStepTick);
+	check(HexGrid);
+	HexGrid->CreateHexagonMap();
 	SpawnMCActors();
 }
 
 void AMCActorManager::OnWorldStepTick(int32 StepTickCount)
 {
+	//Restore turn initial state
 	RefreshMCActorsState();
 	//Combat Phase
 	TryToAttack();
@@ -68,6 +71,7 @@ void AMCActorManager::AfterCombatCleanup()
 	{
 		MCActors[i]->OnAfterCombatCleanup();
 	}
+	UpdateMCActorsCount();
 	UpdateHexGridInfo();
 }
 
@@ -91,6 +95,27 @@ void AMCActorManager::UpdateHexGridInfo()
 		}
 
 	}
+}
+
+void AMCActorManager::UpdateMCActorsCount()
+{
+	int32 BlueCount = 0;
+	int32 RedCount = 0;
+	for (AMCActorBase* MCActor: MCActors)
+	{
+		if (IsValid(MCActor))
+		{
+			if (MCActor->GetTeamId() == ETeamType::Blue)
+			{
+				BlueCount++;
+			}
+			else if (MCActor->GetTeamId() == ETeamType::Red)
+			{
+				RedCount++;
+			}
+		}
+	}
+	GetWorld()->GetGameState<AMCGameState>()->UpdateAliveMCActorsCount(BlueCount, RedCount);
 }
 
 void AMCActorManager::RefreshMCActorsState()
