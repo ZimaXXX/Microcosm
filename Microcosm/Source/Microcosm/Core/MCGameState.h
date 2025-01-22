@@ -16,28 +16,29 @@ UCLASS()
 class MICROCOSM_API AMCGameState : public AGameStateBase
 {
 	GENERATED_BODY()
-
+//Delegates
 public:
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnWorldStepTickDelegate OnWorldStepTickDelegate;
 
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnAliveMCActorsCountUpdatedDelegate OnAliveMCActorsCountUpdatedDelegate;
+
+//Methods
+public:
+	void OnWorldStepTimerTick();
+	float GetCurrentTimeStepAlpha() const;	
+	void UpdateAliveMCActorsCount(int32 InBlueCount, int32 InRedCount);
 	
-	UPROPERTY(BlueprintReadOnly)
+//Properties
+public:
+	UPROPERTY(BlueprintReadOnly, Category = State)
 	int32 CurrentWorldStepCount = 0;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Config)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = State)
 	double LastStepTimestamp = 0.f;
-
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = State)
 	int32 BlueCount = 0;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = State)
 	int32 RedCount = 0;
-	
-	void OnWorldStepTimerTick();
-	
-	float GetCurrentTimeStepAlpha() const;
-	
-	void UpdateAliveMCActorsCount(int32 InBlueCount, int32 InRedCount);
+
 };

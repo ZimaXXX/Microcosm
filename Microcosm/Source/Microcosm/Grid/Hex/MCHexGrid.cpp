@@ -208,39 +208,10 @@ FVector AMCHexGrid::HexToWorldPosition(FIntVector Hex, float HexWidth, float Hex
 
 	return FVector(x, y, 0); // Z remains 0 for a flat grid
 }
-void AMCHexGrid::PlaceHexGrid(UInstancedStaticMeshComponent* ISMComponent, int32 Radius, float HexSize)
-{
-	if (!ISMComponent) return;
-
-	TArray<FIntVector> HexGrid = GenerateHexGrid(Radius);
-
-	for (const FIntVector& Hex : HexGrid)
-	{
-		FVector WorldPosition = HexToWorldPosition(Hex, HexSize, 10);
-
-		// Add instance to the ISM
-		FTransform InstanceTransform(FRotator::ZeroRotator, WorldPosition, FVector::OneVector);
-		ISMComponent->AddInstance(InstanceTransform);
-	}
-}
 
 bool AMCHexGrid::IsHexPassable(FIntVector InTestedPosition)
 {
 	return IsHexAtPosition(InTestedPosition) && !OccupiedPositions.Contains(InTestedPosition);
-}
-
-TArray<FIntVector> AMCHexGrid::GetPassableHexNeighbors(FIntVector InTestedPosition)
-{
-	TArray<FIntVector> Neighbors;
-	for (const FIntVector& Direction : HexDirections)
-	{
-		FIntVector TestedNeighbor = InTestedPosition + Direction;
-		if (IsHexPassable(TestedNeighbor))
-		{
-			Neighbors.Add(TestedNeighbor);
-		}			
-	}
-	return Neighbors;
 }
 
 TArray<FIntVector> AMCHexGrid::GetHexNeighbors(FIntVector InTestedPosition)

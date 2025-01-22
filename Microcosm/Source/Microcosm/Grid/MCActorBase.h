@@ -12,6 +12,7 @@ class IMCManagerInfo;
 UENUM(BlueprintType)
 enum class ETeamType : uint8
 {
+	//Invalid value
 	None = 0,
 	Blue = 1,
 	Red = 2
@@ -20,37 +21,50 @@ enum class ETeamType : uint8
 UENUM(BlueprintType)
 enum class EMovementPattern : uint8
 {
+	//Invalid value
 	None = 0,
+	//Go to random empty neighbour each movement execution
 	Random = 1,
+	//Use AStar algorithm to find closest enemy and move one step ahead
 	AStar = 2,
-	AStarAndRandom = 3//If no enemy move using random
+	//AStar + If no enemy move using Random
+	AStarAndRandom = 3
 };
 
 USTRUCT(BlueprintType)
 struct FMCActorConfig
 {
 	GENERATED_BODY();
-	
+
+	//Use Random Position on Grid
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bUseRandomPosition = true;
+	//User Defined Position on Grid if not Randomized
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "!bUseRandomPosition"))
 	FIntVector StartingPosition = INVALID_GRID_POSITION;
 
+	//Movement Behaviour
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	EMovementPattern MovementPattern = EMovementPattern::AStarAndRandom;
-	
+
+	//Speed where 1 is max and any bigger number means number of steps to wait
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 SpeedInWorldSteps = 1;
 
+	//Randomize MaxHealth <1, MaxHealth>
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bUseRandomHealth = true;
+	//User Defined MaxHealth if not Randomized
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "!bUseRandomHealth"))
 	int32 MaxHealth = 1;
 
+	//Behaviour of movement after attacking
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bCanMoveAfterAttack = false;
+	//Range of attack
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 AttackRange = 1;
+	//Power of attack
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 AttackPower = 1;
 };
@@ -79,40 +93,40 @@ class MICROCOSM_API AMCActorBase : public AActor
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMCActorDeathDelegate, AMCActorBase*, DeadMCActor);
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnHealthChangedDelegate, int32, CurrentHealth);
 	GENERATED_BODY()
+	//Delegates
 public:
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnMCActorDeathDelegate OnMCActorDeathDelegate;
 	
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnHealthChangedDelegate OnHealthChangedDelegate;
-	
-
-	AMCActorBase();
-	
-	UPROPERTY(BlueprintReadOnly)
-	FIntVector PositionOnGrid = INVALID_GRID_POSITION;
-	AMCHexGrid* HexGrid = nullptr;
-
-	void Init(const FMCActorAppliedConfig& Config, AMCHexGrid* InHexGrid);
-	bool IsActorLocationMatchGridPosition(float Tolerance = UE_KINDA_SMALL_NUMBER) const;
-	void OrderMovementAnimation();
+	//Overrides
+protected:
 	virtual void Tick(float DeltaSeconds) override;
-	FIntVector MoveTo(FIntVector InTargetPosition);
-	void ExecuteMovement(FIntVector& OutNewPosition, FIntVector& OutPrevPosition, IMCManagerInfo* ManagerInfo);
-	void ApplyRandomMovementPattern(
-	);
-	void ApplyAStarMovementPattern(IMCManagerInfo* ManagerInfo, bool bUseRandomPattern = false);
-	void OnNewTurn();
-	void OnDeath();
-	
-	void ApplyDamage(int32 Damage);
-	void OnAfterCombatCleanup();
-	void ExecuteAttack(IMCManagerInfo* ManagerInfo);
-
-
+	//Components
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
 	UStaticMeshComponent* Mesh;
+	
+	//Constructor
+public:
+	AMCActorBase();
+	
+	//Methods
+public:
+	void Init(const FMCActorAppliedConfig& Config, AMCHexGrid* InHexGrid);
+	void ExecuteMovement(FIntVector& OutNewPosition, FIntVector& OutPrevPosition, IMCManagerInfo* ManagerInfo);
+	void ApplyDamage(int32 Damage);
+	void OnAfterCombatCleanup();
+	void ExecuteAttack(IMCManagerInfo* ManagerInfo);
+		void OnNewTurn();
+protected:
+	void OrderMovementAnimation();
+	FIntVector MoveTo(FIntVector InTargetPosition);
+	void ApplyRandomMovementPattern();
+	void ApplyAStarMovementPattern(IMCManagerInfo* ManagerInfo, bool bUseRandomPattern = false);
+	void OnDeath();
+	bool IsActorLocationMatchGridPosition(float Tolerance = UE_KINDA_SMALL_NUMBER) const;
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "Events")
 	void ReceiveOnDamage();
@@ -152,8 +166,11 @@ public:
 	{
 		return CurrentHealth;
 	}
-
-protected:
+//Properties
+public:
+	UPROPERTY(BlueprintReadOnly, Category = "State")
+	FIntVector PositionOnGrid = INVALID_GRID_POSITION;
+protected:	
 	//Config
 	ETeamType TeamId = ETeamType::None;
 	int32 MaxHealth = 0;
@@ -168,4 +185,6 @@ protected:
 	int32 CurrentHealth = 0;
 	FVector LerpInitialLocation = FVector::ZeroVector;
 	int32 LastWorldStepTimeWithMovement = 0;
+	UPROPERTY(BlueprintReadOnly, Category = "Data")
+	AMCHexGrid* HexGrid = nullptr;
 };

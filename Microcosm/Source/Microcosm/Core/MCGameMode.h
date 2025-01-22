@@ -17,13 +17,16 @@ class MICROCOSM_API AMCGameMode : public AGameModeBase, public IWorldStateInterf
 
 public:
 	AMCGameMode();
-protected:
 
+//Overrides
+protected:
 	virtual void BeginPlay() override;
 	virtual void PostInitializeComponents() override;
 
+//Methods
+protected:
 	void OnWorldStepTimerTick();
-
+//Properties
 protected:
 	FTimerHandle TimerHandle;
 

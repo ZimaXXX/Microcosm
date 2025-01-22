@@ -19,7 +19,10 @@ class MICROCOSM_API AMCActorManager : public AActor, public IMCManagerInfo
 public:
 	// Sets default values for this actor's properties
 	AMCActorManager();
-
+//Overrides
+protected:
+	virtual void BeginPlay() override;
+	//Methods
 protected:
 	UFUNCTION()
 	void OnMCActorDeath(AMCActorBase* DeadMCActor);
@@ -31,21 +34,19 @@ protected:
 	void UpdateHexGridInfo();
 	void UpdateMCActorsCount();
 	void RefreshMCActorsState();
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
+	bool IsPositionOccupied(const FIntVector& InPositionToCheck, TArray<FIntVector>& InOccupiedPositions);
+	void ApplyMCActorTeamConfigs(ETeamType InTeam);
 	
 	UFUNCTION()
 	void OnWorldStepTick(int32 StepTickCount);
-
+	
+//Properties
+protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Config")
 	AMCHexGrid* HexGrid = nullptr;
 
-	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Config")
-	//TArray<FMCActorConfig> BlueActorConfigs;
 	TArray<FMCActorAppliedConfig> AppliedBlueActorConfigs;
-	
-	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Config")
-	//TArray<FMCActorConfig> RedActorConfigs;
+
 	TArray<FMCActorAppliedConfig> AppliedRedActorConfigs;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Config")
@@ -56,11 +57,7 @@ protected:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Config")
 	int32 MaxHealth = 5;
-
-	bool IsPositionOccupied(const FIntVector& InPositionToCheck, TArray<FIntVector>& InOccupiedPositions);
-	void ApplyMCActorTeamConfigs(ETeamType InTeam);
-
-protected:
+	
 	UPROPERTY()
 	TArray<AMCActorBase*> MCActors;
 
