@@ -2,6 +2,9 @@
 
 
 #include "HexGrid.h"
+
+#include "Camera/CameraActor.h"
+#include "Camera/CameraComponent.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "GameFramework/GameModeBase.h"
 #include "Microcosm/Core/MCGameMode.h"
@@ -56,12 +59,12 @@ void AHexGrid::CreateHexagonMap()
 	}
 	
 	const FBoxSphereBounds Bounds = InstancedMeshComponent->GetStaticMesh()->GetBounds();
-	const FVector BoxExtent = Bounds.BoxExtent;
+	const FVector HexBoxExtent = Bounds.BoxExtent;
 
 	TArray<FIntVector> HexGrid = GenerateHexGrid(MapRadius);
 	RemoveRandomHexesWithConnectivity(HexGrid, HolesRatio);
 
-	float MeshX = 2 * BoxExtent.X;
+	float MeshX = 2 * HexBoxExtent.X;
 	for (const FIntVector& Hex : HexGrid)
 	{
 		FVector WorldPosition = HexToWorldPosition(Hex, MeshX, MeshX);
@@ -76,6 +79,8 @@ void AHexGrid::CreateHexagonMap()
 		InstancedMeshComponent->SetCustomDataValue(InstanceIndex, 1, Hex.Y);
 		InstancedMeshComponent->SetCustomDataValue(InstanceIndex, 2, Hex.Z);
 	}
+	float CameraOffset = HexBoxExtent.Y * 2 + 50.f;
+	AdjustCameraForGrid(Camera, MeshX, MapRadius, CameraOffset);
 	
 	//LogHexData();
 }
@@ -100,14 +105,14 @@ int32 AHexGrid::GetHexAtPosition(FIntVector InPosition) const
 {
 	for (int32 Index = 0; Index < InstancedMeshComponent->GetNumInstances(); ++Index)
 	{
-		int32 P = InstancedMeshComponent->PerInstanceSMCustomData[Index * 3];
-		if (InPosition.X == P)
+		int32 Q = InstancedMeshComponent->PerInstanceSMCustomData[Index * 3];
+		if (InPosition.X == Q)
 		{
-			int32 Q = InstancedMeshComponent->PerInstanceSMCustomData[Index * 3 + 1];
-			if (InPosition.Y == Q)
+			int32 R = InstancedMeshComponent->PerInstanceSMCustomData[Index * 3 + 1];
+			if (InPosition.Y == R)
 			{
-				int32 R = InstancedMeshComponent->PerInstanceSMCustomData[Index * 3 + 2];
-				if (InPosition.Z == R)
+				int32 S = InstancedMeshComponent->PerInstanceSMCustomData[Index * 3 + 2];
+				if (InPosition.Z == S)
 				{
 					return Index;
 				}
@@ -411,4 +416,32 @@ TArray<FIntVector> AHexGrid::FindPathWithAStar(FIntVector Start, FIntVector Goal
 
 	// Return empty path if no solution
 	return {};
+}
+
+void AHexGrid::AdjustCameraForGrid(ACameraActor* InCamera, int32 GridRadius, float HexSize, float InOffset)
+{
+	if (!InCamera) return;
+	
+	//Calculate grid dimensions
+	float GridHeight = HexSize * 2 * FMath::Sqrt(3.f) * GridRadius;
+	float GridWidth = HexSize * 2 * (GridRadius + 0.5f);
+
+	//Get camera FOV (in radians)
+	float VerticalFOV = FMath::DegreesToRadians(InCamera->GetCameraComponent()->FieldOfView);
+	float AspectRatio = InCamera->GetCameraComponent()->AspectRatio;
+
+	//Calculate camera distances
+	float CameraDistanceVertical = (GridHeight / 2) / FMath::Tan(VerticalFOV / 2);
+	float HorizontalFOV = 2 * FMath::Atan(FMath::Tan(VerticalFOV / 2) * AspectRatio);
+	float CameraDistanceHorizontal = (GridWidth / 2) / FMath::Tan(HorizontalFOV / 2);
+
+	//Use the larger distance
+	float FinalCameraDistance = FMath::Max(CameraDistanceVertical, CameraDistanceHorizontal) + InOffset;
+
+	//Set the camera position
+	FVector CameraLocation = FVector(0.0f, 0.0f, FinalCameraDistance); // Adjust axes as needed
+	InCamera->SetActorLocation(CameraLocation);
+
+	//Aim at grid center
+	InCamera->SetActorRotation(FRotator(-90.0f, 0.0f, 0.0f)); // Adjust rotation as needed
 }

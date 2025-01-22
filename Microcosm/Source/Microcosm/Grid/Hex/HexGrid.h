@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Camera/CameraComponent.h"
 #include "GameFramework/Actor.h"
 #include "Microcosm/Grid/MCCommons.h"
 #include "HexGrid.generated.h"
@@ -53,7 +54,8 @@ public:
 
 	//Pathfinding
 	TArray<FIntVector> FindPathWithAStar(FIntVector Start, FIntVector Goal);
-	
+	void AdjustCameraForGrid(ACameraActor* InCamera, int32 GridRadius, float HexSize, float InOffset);
+
 	TArray<FIntVector> OccupiedPositions;
 
 	int32 GetMaxRange()
@@ -64,6 +66,9 @@ public:
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
 	UInstancedStaticMeshComponent* InstancedMeshComponent;
+
+	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = Config, meta = (AllowPrivateAccess = "true"))
+	ACameraActor* Camera;
 	
 
 };
