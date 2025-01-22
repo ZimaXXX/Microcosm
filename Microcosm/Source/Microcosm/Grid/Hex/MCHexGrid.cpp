@@ -1,7 +1,7 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "HexGrid.h"
+#include "MCHexGrid.h"
 
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
@@ -14,7 +14,7 @@
 
 
 // Sets default values
-AHexGrid::AHexGrid()
+AMCHexGrid::AMCHexGrid()
 {
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -26,7 +26,7 @@ AHexGrid::AHexGrid()
 	InstancedMeshComponent->NumCustomDataFloats = 3;
 }
 
-TArray<FIntVector> AHexGrid::GenerateHexGrid(int32 Radius)
+TArray<FIntVector> AMCHexGrid::GenerateHexGrid(int32 Radius)
 {
 	TArray<FIntVector> HexGrid;
 	for (int32 q = -Radius; q <= Radius; ++q)
@@ -44,10 +44,10 @@ TArray<FIntVector> AHexGrid::GenerateHexGrid(int32 Radius)
 }
 
 
-void AHexGrid::CreateHexagonMap()
+void AMCHexGrid::CreateHexagonMap()
 {
-	ensure(InstancedMeshComponent);
-	ensure(InstancedMeshComponent->GetStaticMesh());
+	check(InstancedMeshComponent);
+	check(InstancedMeshComponent->GetStaticMesh());
 
 	MapRadius = Cast<AMCWorldSettings>(GetWorldSettings())->GridRadius;
 	float HolesRatio = Cast<AMCWorldSettings>(GetWorldSettings())->GridHolesRatio;
@@ -85,7 +85,7 @@ void AHexGrid::CreateHexagonMap()
 	//LogHexData();
 }
 
-void AHexGrid::LogHexData()
+void AMCHexGrid::LogHexData()
 {
 	for (int32 Index = 0; Index < InstancedMeshComponent->GetNumInstances(); ++Index)
 	{
@@ -96,12 +96,12 @@ void AHexGrid::LogHexData()
 	}
 }
 
-bool AHexGrid::IsHexAtPosition(FIntVector InPosition) const
+bool AMCHexGrid::IsHexAtPosition(FIntVector InPosition) const
 {
 	return GetHexAtPosition(InPosition) != INDEX_NONE;
 }
 
-int32 AHexGrid::GetHexAtPosition(FIntVector InPosition) const
+int32 AMCHexGrid::GetHexAtPosition(FIntVector InPosition) const
 {
 	for (int32 Index = 0; Index < InstancedMeshComponent->GetNumInstances(); ++Index)
 	{
@@ -122,7 +122,7 @@ int32 AHexGrid::GetHexAtPosition(FIntVector InPosition) const
 	return INDEX_NONE;
 }
 
-FTransform AHexGrid::GetTransformFromHexPosition(FIntVector InPosition) const
+FTransform AMCHexGrid::GetTransformFromHexPosition(FIntVector InPosition) const
 {
 	int32 Index = GetHexAtPosition(InPosition);
 	FTransform Transform = FTransform();
@@ -133,7 +133,7 @@ FTransform AHexGrid::GetTransformFromHexPosition(FIntVector InPosition) const
 	return Transform;
 }
 
-FTransform AHexGrid::GetTransformFromHexIndex(int32 InHexIndex) const
+FTransform AMCHexGrid::GetTransformFromHexIndex(int32 InHexIndex) const
 {
 	FTransform Transform = FTransform();
 	if (InHexIndex != INDEX_NONE && InHexIndex < InstancedMeshComponent->GetNumInstances())
@@ -143,7 +143,7 @@ FTransform AHexGrid::GetTransformFromHexIndex(int32 InHexIndex) const
 	return Transform;
 }
 
-const TArray<FIntVector>* AHexGrid::GetEmptyHexPositions(TArray<FIntVector> ExcludedPositions, int32 Range, FIntVector InTestedPosition) const
+const TArray<FIntVector>* AMCHexGrid::GetEmptyHexPositions(TArray<FIntVector> ExcludedPositions, int32 Range, FIntVector InTestedPosition) const
 {
 	TArray<FIntVector>* ValidPositions = new TArray<FIntVector>();
 	for (int32 Index = 0; Index < InstancedMeshComponent->GetNumInstances(); ++Index)
@@ -185,7 +185,7 @@ const TArray<FIntVector>* AHexGrid::GetEmptyHexPositions(TArray<FIntVector> Excl
 	return ValidPositions;
 }
 
-int32 AHexGrid::GetHexDistance(FIntVector InTestedPosition, FIntVector InHexPosition) const
+int32 AMCHexGrid::GetHexDistance(FIntVector InTestedPosition, FIntVector InHexPosition) const
 {
 	int32 Distance = FMath::Max(
 		FMath::Max(FMath::Abs(InTestedPosition.X - InHexPosition.X), FMath::Abs(InTestedPosition.Y - InHexPosition.Y)),
@@ -194,21 +194,21 @@ int32 AHexGrid::GetHexDistance(FIntVector InTestedPosition, FIntVector InHexPosi
 	return Distance;
 }
 
-bool AHexGrid::IsHexInRange(FIntVector InTestedPosition, FIntVector InHexPosition, int32 Range) const
+bool AMCHexGrid::IsHexInRange(FIntVector InTestedPosition, FIntVector InHexPosition, int32 Range) const
 {
 	int32 Distance = GetHexDistance(InTestedPosition, InHexPosition);
 	
 	return Distance <= Range;
 }
 
-FVector AHexGrid::HexToWorldPosition(FIntVector Hex, float HexWidth, float HexHeight)
+FVector AMCHexGrid::HexToWorldPosition(FIntVector Hex, float HexWidth, float HexHeight)
 {
 	float x = HexWidth * (Hex.X + 0.5f * Hex.Y);
 	float y = HexHeight * 0.866f * Hex.Y; // 0.866 = sqrt(3)/2
 
 	return FVector(x, y, 0); // Z remains 0 for a flat grid
 }
-void AHexGrid::PlaceHexGrid(UInstancedStaticMeshComponent* ISMComponent, int32 Radius, float HexSize)
+void AMCHexGrid::PlaceHexGrid(UInstancedStaticMeshComponent* ISMComponent, int32 Radius, float HexSize)
 {
 	if (!ISMComponent) return;
 
@@ -224,12 +224,12 @@ void AHexGrid::PlaceHexGrid(UInstancedStaticMeshComponent* ISMComponent, int32 R
 	}
 }
 
-bool AHexGrid::IsHexPassable(FIntVector InTestedPosition)
+bool AMCHexGrid::IsHexPassable(FIntVector InTestedPosition)
 {
 	return IsHexAtPosition(InTestedPosition) && !OccupiedPositions.Contains(InTestedPosition);
 }
 
-TArray<FIntVector> AHexGrid::GetPassableHexNeighbors(FIntVector InTestedPosition)
+TArray<FIntVector> AMCHexGrid::GetPassableHexNeighbors(FIntVector InTestedPosition)
 {
 	TArray<FIntVector> Neighbors;
 	for (const FIntVector& Direction : HexDirections)
@@ -243,7 +243,7 @@ TArray<FIntVector> AHexGrid::GetPassableHexNeighbors(FIntVector InTestedPosition
 	return Neighbors;
 }
 
-TArray<FIntVector> AHexGrid::GetHexNeighbors(FIntVector InTestedPosition)
+TArray<FIntVector> AMCHexGrid::GetHexNeighbors(FIntVector InTestedPosition)
 {
 		TArray<FIntVector> Neighbors;
     	for (const FIntVector& Direction : HexDirections)
@@ -254,7 +254,7 @@ TArray<FIntVector> AHexGrid::GetHexNeighbors(FIntVector InTestedPosition)
     	return Neighbors;
 }
 
-void AHexGrid::RemoveRandomHexesWithConnectivity(TArray<FIntVector>& HexGrid, float Ratio)
+void AMCHexGrid::RemoveRandomHexesWithConnectivity(TArray<FIntVector>& HexGrid, float Ratio)
 {
 	Ratio = FMath::Clamp(Ratio, 0.f, 1.f);
 	if (Ratio == 0.f)//no removals
@@ -297,7 +297,7 @@ void AHexGrid::RemoveRandomHexesWithConnectivity(TArray<FIntVector>& HexGrid, fl
 	}
 }
 
-bool AHexGrid::IsGridConnected(const TArray<FIntVector>& RemainingHexes, const FIntVector& StartHex)
+bool AMCHexGrid::IsGridConnected(const TArray<FIntVector>& RemainingHexes, const FIntVector& StartHex)
 {
 	TArray<FIntVector> Visited;
 	TArray<FIntVector> Queue = { StartHex };
@@ -331,7 +331,7 @@ bool AHexGrid::IsGridConnected(const TArray<FIntVector>& RemainingHexes, const F
 	return Visited.Num() == RemainingHexes.Num();
 }
 
-FIntVector AHexGrid::GetRandomEmptyHexPosition(TArray<FIntVector> ExcludedPositions, FIntVector InTestedPosition, int32 InRange) const
+FIntVector AMCHexGrid::GetRandomEmptyHexPosition(TArray<FIntVector> ExcludedPositions, FIntVector InTestedPosition, int32 InRange) const
 {
 	const TArray<FIntVector>* ValidPositions = GetEmptyHexPositions(ExcludedPositions, InRange, InTestedPosition);
 	if (ValidPositions->Num() == 0)
@@ -352,7 +352,7 @@ FIntVector AHexGrid::GetRandomEmptyHexPosition(TArray<FIntVector> ExcludedPositi
 	return FinalPosition;
 }
 
-TArray<FIntVector> AHexGrid::FindPathWithAStar(FIntVector Start, FIntVector Goal)
+TArray<FIntVector> AMCHexGrid::FindPathWithAStar(FIntVector Start, FIntVector Goal)
 {
 	// Priority queue for open set
 	TArray<FIntVector> OpenSet = { Start };
@@ -418,7 +418,7 @@ TArray<FIntVector> AHexGrid::FindPathWithAStar(FIntVector Start, FIntVector Goal
 	return {};
 }
 
-void AHexGrid::AdjustCameraForGrid(ACameraActor* InCamera, int32 GridRadius, float HexSize, float InOffset)
+void AMCHexGrid::AdjustCameraForGrid(ACameraActor* InCamera, int32 GridRadius, float HexSize, float InOffset)
 {
 	if (!InCamera) return;
 	

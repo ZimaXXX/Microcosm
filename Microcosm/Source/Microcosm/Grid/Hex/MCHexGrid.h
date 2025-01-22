@@ -6,17 +6,17 @@
 #include "Camera/CameraComponent.h"
 #include "GameFramework/Actor.h"
 #include "Microcosm/Grid/MCCommons.h"
-#include "HexGrid.generated.h"
+#include "MCHexGrid.generated.h"
 
 class AHexBase;
 UCLASS()
-class MICROCOSM_API AHexGrid : public AActor
+class MICROCOSM_API AMCHexGrid : public AActor
 {
 	GENERATED_BODY()
 
 public:
 	// Sets default values for this actor's properties
-	AHexGrid();
+	AMCHexGrid();
 
 	const TArray<FIntVector> HexDirections = {
 		FIntVector(1, -1, 0),  // East

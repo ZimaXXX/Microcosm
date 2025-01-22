@@ -2,7 +2,7 @@
 
 
 #include "MCActorBase.h"
-#include "Hex/HexGrid.h"
+#include "Hex/MCHexGrid.h"
 #include "Microcosm/Core/MCGameState.h"
 #include "Microcosm/Interfaces/MCManagerInfo.h"
 
@@ -17,7 +17,7 @@ AMCActorBase::AMCActorBase()
 	Mesh->CastShadow = false;
 }
 
-void AMCActorBase::Init(const FMCActorAppliedConfig& Config, AHexGrid* InHexGrid)
+void AMCActorBase::Init(const FMCActorAppliedConfig& Config, AMCHexGrid* InHexGrid)
 {
 	MaxHealth = Config.MaxHealth;
 	TeamId = Config.TeamId;

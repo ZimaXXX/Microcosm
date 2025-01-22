@@ -8,7 +8,7 @@
 #include "Microcosm/Interfaces/MCManagerInfo.h"
 #include "MCActorManager.generated.h"
 
-class AHexGrid;
+class AMCHexGrid;
 
 UCLASS(Blueprintable, BlueprintType)
 class MICROCOSM_API AMCActorManager : public AActor, public IMCManagerInfo
@@ -37,7 +37,7 @@ protected:
 	void OnWorldStepTick(int32 StepTickCount);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Config")
-	AHexGrid* HexGrid = nullptr;
+	AMCHexGrid* HexGrid = nullptr;
 
 	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Config")
 	//TArray<FMCActorConfig> BlueActorConfigs;

@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Hex/HexGrid.h"
+#include "Hex/MCHexGrid.h"
 #include "UObject/Object.h"
 #include "MCActorBase.generated.h"
 
@@ -87,9 +87,9 @@ public:
 	
 	UPROPERTY(BlueprintReadOnly)
 	FIntVector PositionOnGrid = INVALID_GRID_POSITION;
-	AHexGrid* HexGrid = nullptr;
+	AMCHexGrid* HexGrid = nullptr;
 
-	void Init(const FMCActorAppliedConfig& Config, AHexGrid* InHexGrid);
+	void Init(const FMCActorAppliedConfig& Config, AMCHexGrid* InHexGrid);
 	bool IsActorLocationMatchGridPosition(float Tolerance = UE_KINDA_SMALL_NUMBER) const;
 	void OrderMovementAnimation();
 	virtual void Tick(float DeltaSeconds) override;

@@ -16,27 +16,17 @@ class MICROCOSM_API AMCGameState : public AGameStateBase
 {
 	GENERATED_BODY()
 
-
-
 public:
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnWorldStepTickDelegate OnWorldStepTickDelegate;
-
-	//Replicates to support joining clients
-	UPROPERTY(BlueprintReadOnly, Replicated)
+	
+	UPROPERTY(BlueprintReadOnly)
 	int32 CurrentWorldStepCount = 0;
-
-
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Config)
 	double LastStepTimestamp = 0.f;
 
 	void OnWorldStepTimerTick();
-
-	//Using RPC for speed
-	UFUNCTION(NetMulticast, Reliable)
-	void OnWorldStepTimerTick_Multicast(int32 InCurrentWorldStepCount);
-
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	
 	float GetCurrentTimeStepAlpha() const;
 };

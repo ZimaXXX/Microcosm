@@ -6,7 +6,7 @@
 #include "MCActorBase.h"
 #include "MCCommons.h"
 #include "GameFramework/GameModeBase.h"
-#include "Hex/HexGrid.h"
+#include "Hex/MCHexGrid.h"
 #include "Microcosm/Core/MCGameState.h"
 #include "Microcosm/Core/MCWorldSettings.h"
 #include "Microcosm/Interfaces/WorldStateInterface.h"
@@ -32,11 +32,8 @@ void AMCActorManager::OnMCActorDeath(AMCActorBase* DeadMCActor)
 void AMCActorManager::BeginPlay()
 {
 	Super::BeginPlay();
-	if (HasAuthority())
-	{
-		GetWorld()->GetGameState<AMCGameState>()->OnWorldStepTickDelegate.AddDynamic(this, &AMCActorManager::OnWorldStepTick);
-		SpawnMCActors();
-	}
+	GetWorld()->GetGameState<AMCGameState>()->OnWorldStepTickDelegate.AddDynamic(this, &AMCActorManager::OnWorldStepTick);
+	SpawnMCActors();
 }
 
 void AMCActorManager::OnWorldStepTick(int32 StepTickCount)
@@ -162,7 +159,8 @@ bool AMCActorManager::IsPositionOccupied(const FIntVector& InPositionToCheck, TA
 void AMCActorManager::ApplyMCActorTeamConfigs(ETeamType InTeam)
 {
 	//We need GameMode to implement WorldStateInterface
-	ensure(GetWorld()->GetAuthGameMode()->GetClass()->ImplementsInterface(UWorldStateInterface::StaticClass()));
+	check(GetWorld()->GetAuthGameMode()->GetClass()->ImplementsInterface(UWorldStateInterface::StaticClass()));
+	check(HexGrid);
 	
 	const TArray<FMCActorConfig>* MCActorConfigs = nullptr;
 	if (InTeam == ETeamType::Blue)
