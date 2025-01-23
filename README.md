@@ -2,6 +2,8 @@
 
 This project implements a deterministic simulation for an auto battle mode, developed entirely in C++ within Unreal Engine, focusing on deterministic simulation and a real-time visualization of the simulation.
 
+![Simulation Showcase](Images/Showcase.gif)
+
 ## Project Overview
 
 The simulation is built on a **hexagonal grid system** and features:
