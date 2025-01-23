@@ -100,6 +100,7 @@ public:
 	
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnHealthChangedDelegate OnHealthChangedDelegate;
+
 	//Overrides
 protected:
 	virtual void Tick(float DeltaSeconds) override;
@@ -187,4 +188,5 @@ protected:
 	int32 LastWorldStepTimeWithMovement = 0;
 	UPROPERTY(BlueprintReadOnly, Category = "Data")
 	AMCHexGrid* HexGrid = nullptr;
+	int32 MovementWorldStep;
 };

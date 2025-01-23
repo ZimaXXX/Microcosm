@@ -48,17 +48,18 @@ void AMCActorBase::OrderMovementAnimation()
 void AMCActorBase::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+	int32 CurrentWorldStep = GetWorld()->GetGameState<AMCGameState>()->CurrentWorldStepCount;
 	float Alpha = GetWorld()->GetGameState<AMCGameState>()->GetCurrentTimeStepAlpha();
-	Alpha *= 1.1f;// Speed up Alpha to allow movement finish before another turn
-	Alpha = FMath::Clamp(Alpha, 0, 1);
-	FVector NewLocation = FMath::Lerp(LerpInitialLocation, HexGrid->GetTransformFromHexPosition(PositionOnGrid).GetLocation(), Alpha);
-	SetActorLocation(NewLocation);
-		
-	if (Alpha >= 1.f || IsActorLocationMatchGridPosition())
+	if (CurrentWorldStep != MovementWorldStep || Alpha >= 1.f || IsActorLocationMatchGridPosition())
 	{
 		LerpInitialLocation = FVector::ZeroVector;
 		SetActorLocation(HexGrid->GetTransformFromHexPosition(PositionOnGrid).GetLocation());//ensure proper location without tolerance
 		SetActorTickEnabled(false);
+	}
+	else
+	{
+		FVector NewLocation = FMath::Lerp(LerpInitialLocation, HexGrid->GetTransformFromHexPosition(PositionOnGrid).GetLocation(), Alpha);
+		SetActorLocation(NewLocation);
 	}
 }
 
@@ -67,6 +68,7 @@ FIntVector AMCActorBase::MoveTo(FIntVector InTargetPosition)
 	FTransform HexTransform = HexGrid->GetTransformFromHexPosition(InTargetPosition);
 	//SetActorLocation(HexTransform.GetLocation());
 	PositionOnGrid = InTargetPosition;
+	MovementWorldStep = GetWorld()->GetGameState<AMCGameState>()->CurrentWorldStepCount;
 	OrderMovementAnimation();
 	LastWorldStepTimeWithMovement = GetWorld()->GetGameState<AMCGameState>()->CurrentWorldStepCount;
 	return PositionOnGrid;
@@ -80,19 +82,18 @@ void AMCActorBase::ExecuteMovement(FIntVector& OutNewPosition, FIntVector& OutPr
 	
 	if (!IsValid(HexGrid))
 	{
-		UE_LOG(LogTemp, Error, TEXT("Hex Grid not available!"));
-		//return INVALID_GRID_POSITION;
+		UE_LOG(LogTemp, Warning, TEXT("Hex Grid not available!"));
 		return;
 	}
 	if (bHasAttackedThisTurn && !bCanMoveAfterAttack)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Cannot move after attack!"));
+		UE_LOG(LogTemp, Warning, TEXT("Cannot move after attack!"));
 		return;
 	}
 	int32 CurrentWorldStepCount = GetWorld()->GetGameState<AMCGameState>()->CurrentWorldStepCount;
 	if (LastWorldStepTimeWithMovement > 0 && CurrentWorldStepCount - LastWorldStepTimeWithMovement < SpeedInWorldSteps)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Cannot move because of speed!"));
+		UE_LOG(LogTemp, Warning, TEXT("Cannot move because of speed!"));
 		return;
 	}
 	//Is Enemy in Range
