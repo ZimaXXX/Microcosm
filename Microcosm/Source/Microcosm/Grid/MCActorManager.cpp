@@ -67,7 +67,7 @@ void AMCActorManager::ApplyMovement()
 
 void AMCActorManager::AfterCombatCleanup()
 {
-	for (int i = MCActors.Num() - 1; i >= 0; --i)//using reverse for loop to prevent issues with range changing inside the loop
+	for (int32 i = MCActors.Num() - 1; i >= 0; --i)//using reverse for loop to prevent issues with range changing inside the loop
 	{
 		MCActors[i]->OnAfterCombatCleanup();
 	}
@@ -93,7 +93,6 @@ void AMCActorManager::UpdateHexGridInfo()
 		{
 			HexGrid->OccupiedPositions.Add(MCActor->PositionOnGrid);
 		}
-
 	}
 }
 
